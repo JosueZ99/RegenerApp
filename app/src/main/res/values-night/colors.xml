@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Paleta Principal - Versión Oscura (mismos nombres, valores diferentes) -->
+    <color name="primary_dark_blue">#1ABC9C</color>
+    <color name="primary_blue_gray">#16A085</color>
+    <color name="primary_slate">#148F77</color>
+
+    <!-- Paleta Secundaria - Versión Oscura -->
+    <color name="secondary_teal">#52C41A</color>
+    <color name="secondary_mint">#73D13D</color>
+    <color name="accent_emerald">#95DE64</color>
+
+    <!-- Grises para Tema Oscuro (invertidos) -->
+    <color name="gray_50">#111827</color>
+    <color name="gray_100">#1F2937</color>
+    <color name="gray_200">#374151</color>
+    <color name="gray_300">#4B5563</color>
+    <color name="gray_400">#6B7280</color>
+    <color name="gray_500">#9CA3AF</color>
+    <color name="gray_600">#D1D5DB</color>
+    <color name="gray_700">#E5E7EB</color>
+    <color name="gray_800">#F3F4F6</color>
+    <color name="gray_900">#F9FAFB</color>
+
+    <!-- Colores de Estado - Versión Oscura -->
+    <color name="success_green">#34D399</color>
+    <color name="warning_amber">#FBBF24</color>
+    <color name="error_red">#F87171</color>
+    <color name="info_blue">#60A5FA</color>
+
+    <!-- Colores de Superficie - Versión Oscura -->
+    <color name="surface_white">#1F2937</color>
+    <color name="surface_light">#111827</color>
+    <color name="background_main">#0F172A</color>
+
+    <!-- Transparencias - Versión Oscura -->
+    <color name="overlay_dark">#B0000000</color>
+    <color name="overlay_light">#40FFFFFF</color>
+
+    <!-- Colores Legacy para tema oscuro -->
+    <color name="purple_200">#1ABC9C</color>
+    <color name="purple_500">#16A085</color>
+    <color name="purple_700">#148F77</color>
+    <color name="teal_200">#52C41A</color>
+    <color name="teal_700">#73D13D</color>
+    <color name="black">#FFFFFF</color>
+    <color name="white">#000000</color>
+</resources>

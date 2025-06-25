@@ -1,10 +1,48 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="purple_200">#FFBB86FC</color>
-    <color name="purple_500">#FF6200EE</color>
-    <color name="purple_700">#FF3700B3</color>
-    <color name="teal_200">#FF03DAC5</color>
-    <color name="teal_700">#FF018786</color>
-    <color name="black">#FF000000</color>
-    <color name="white">#FFFFFFFF</color>
+    <!-- Paleta Principal - Azules Gris Modernos -->
+    <color name="primary_dark_blue">#2C3E50</color>
+    <color name="primary_blue_gray">#34495E</color>
+    <color name="primary_slate">#445566</color>
+
+    <!-- Paleta Secundaria - Verdes Teal Elegantes -->
+    <color name="secondary_teal">#16A085</color>
+    <color name="secondary_mint">#1ABC9C</color>
+    <color name="accent_emerald">#27AE60</color>
+
+    <!-- Grises Sofisticados -->
+    <color name="gray_50">#FAFBFC</color>
+    <color name="gray_100">#F4F6F8</color>
+    <color name="gray_200">#E4E7EB</color>
+    <color name="gray_300">#D1D5DB</color>
+    <color name="gray_400">#9CA3AF</color>
+    <color name="gray_500">#6B7280</color>
+    <color name="gray_600">#4B5563</color>
+    <color name="gray_700">#374151</color>
+    <color name="gray_800">#1F2937</color>
+    <color name="gray_900">#111827</color>
+
+    <!-- Colores de Estado -->
+    <color name="success_green">#10B981</color>
+    <color name="warning_amber">#F59E0B</color>
+    <color name="error_red">#EF4444</color>
+    <color name="info_blue">#3B82F6</color>
+
+    <!-- Colores de Superficie -->
+    <color name="surface_white">#FFFFFF</color>
+    <color name="surface_light">#FAFBFC</color>
+    <color name="background_main">#F8FAFC</color>
+
+    <!-- Transparencias -->
+    <color name="overlay_dark">#80000000</color>
+    <color name="overlay_light">#40FFFFFF</color>
+
+    <!-- Colores Legacy (mantenidos para compatibilidad) -->
+    <color name="purple_200">#16A085</color>
+    <color name="purple_500">#2C3E50</color>
+    <color name="purple_700">#1B2631</color>
+    <color name="teal_200">#1ABC9C</color>
+    <color name="teal_700">#148F77</color>
+    <color name="black">#000000</color>
+    <color name="white">#FFFFFF</color>
 </resources>

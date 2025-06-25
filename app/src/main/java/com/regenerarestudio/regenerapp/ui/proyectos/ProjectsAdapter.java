@@ -79,10 +79,12 @@ public class ProjectsAdapter extends RecyclerView.Adapter<ProjectsAdapter.Projec
 
             // Resaltar proyecto seleccionado
             if (project.isSelected()) {
-                itemView.setBackgroundResource(R.color.teal_200);
+                itemView.setBackgroundResource(R.color.gray_100);
                 tvProjectStatus.setText("✓ SELECCIONADO");
+                tvProjectStatus.setBackgroundResource(R.drawable.selected_project_background);
             } else {
                 itemView.setBackgroundResource(android.R.color.transparent);
+                tvProjectStatus.setBackgroundResource(R.drawable.status_background);
             }
         }
     }
