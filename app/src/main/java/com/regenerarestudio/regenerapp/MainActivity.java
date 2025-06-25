@@ -78,6 +78,7 @@ public class MainActivity extends AppCompatActivity {
 
         // Inicializar estado de navegación
         updateNavigationState();
+        updateToolbarTitle();
     }
 
     private void setupBottomNavigation() {
@@ -178,9 +179,20 @@ public class MainActivity extends AppCompatActivity {
         this.isProjectSelected = selected;
         this.currentProjectName = projectName;
         updateNavigationState();
+        updateToolbarTitle();
 
         if (selected) {
             Toast.makeText(this, "Proyecto seleccionado: " + projectName, Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void updateToolbarTitle() {
+        if (getSupportActionBar() != null) {
+            if (isProjectSelected) {
+                getSupportActionBar().setTitle("📁 " + currentProjectName);
+            } else {
+                getSupportActionBar().setTitle(getString(R.string.app_name));
+            }
         }
     }
 
