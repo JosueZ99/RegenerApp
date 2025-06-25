@@ -1,0 +1,33 @@
+<resources>
+    <string name="app_name">RegenerApp</string>
+    <string name="navigation_drawer_open">Open navigation drawer</string>
+    <string name="navigation_drawer_close">Close navigation drawer</string>
+    <string name="nav_header_title">Android Studio</string>
+    <string name="nav_header_subtitle">android.studio@android.com</string>
+    <string name="nav_header_desc">Navigation header</string>
+    <string name="action_settings">Settings</string>
+
+    <string name="menu_home">Home</string>
+    <string name="menu_gallery">Gallery</string>
+    <string name="menu_slideshow">Slideshow</string>
+
+    <!-- Bottom Navigation -->
+    <string name="title_proyectos">Proyectos</string>
+    <string name="title_calculadora">Calculadora</string>
+    <string name="title_presupuestos">Presupuestos</string>
+    <string name="title_dashboard">Dashboard</string>
+    <string name="title_proveedores">Proveedores</string>
+
+    <!-- Navigation Drawer -->
+    <string name="nav_materiales">Base de Datos de Materiales</string>
+    <string name="nav_exportacion">Exportación</string>
+    <string name="nav_configuracion">Configuración</string>
+    <string name="nav_ayuda">Ayuda</string>
+    <string name="nav_acerca">Acerca de</string>
+
+    <!-- Mensajes -->
+    <string name="msg_seleccione_proyecto">Selecciona un proyecto primero</string>
+    <string name="msg_cambiar_proyecto">¿Deseas cambiar de proyecto? Los cambios no guardados se perderán.</string>
+    <string name="btn_cambiar">Cambiar</string>
+    <string name="btn_cancelar">Cancelar</string>
+</resources>

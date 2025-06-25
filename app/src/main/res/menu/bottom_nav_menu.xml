@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/navigation_proyectos"
+        android:icon="@drawable/ic_folder_24"
+        android:title="@string/title_proyectos" />
+
+    <item
+        android:id="@+id/navigation_calculadora"
+        android:icon="@drawable/ic_calculate_24"
+        android:title="@string/title_calculadora"
+        android:enabled="false" />
+
+    <item
+        android:id="@+id/navigation_presupuestos"
+        android:icon="@drawable/ic_attach_money_24"
+        android:title="@string/title_presupuestos"
+        android:enabled="false" />
+
+    <item
+        android:id="@+id/navigation_dashboard"
+        android:icon="@drawable/ic_dashboard_24"
+        android:title="@string/title_dashboard"
+        android:enabled="false" />
+
+    <item
+        android:id="@+id/navigation_proveedores"
+        android:icon="@drawable/ic_business_24"
+        android:title="@string/title_proveedores" />
+</menu>
