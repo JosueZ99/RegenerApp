@@ -22,16 +22,18 @@ import com.regenerarestudio.regenerapp.ui.calculadora.CalculadoraFragment;
 import com.regenerarestudio.regenerapp.ui.presupuestos.PresupuestosFragment;
 import com.regenerarestudio.regenerapp.ui.dashboard.DashboardFragment;
 import com.regenerarestudio.regenerapp.ui.proveedores.ProveedoresFragment;
-import com.regenerarestudio.regenerapp.ui.home.HomeFragment;
-import com.regenerarestudio.regenerapp.ui.gallery.GalleryFragment;
-import com.regenerarestudio.regenerapp.ui.slideshow.SlideshowFragment;
+import com.regenerarestudio.regenerapp.ui.materiales.MaterialesFragment;
+import com.regenerarestudio.regenerapp.ui.exportacion.ExportacionFragment;
+import com.regenerarestudio.regenerapp.ui.configuracion.ConfiguracionFragment;
+import com.regenerarestudio.regenerapp.ui.ayuda.AyudaFragment;
+import com.regenerarestudio.regenerapp.ui.acercade.AcercaDeFragment;
 
 public class MainActivity extends AppCompatActivity {
 
     private ActivityMainBinding binding;
     private BottomNavigationView bottomNavigation;
-    private boolean isProjectSelected = false;
-    private String currentProjectName = "";
+    private boolean isProjectSelected = false; // Estado del proyecto
+    private String currentProjectName = ""; // Nombre del proyecto actual
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -42,22 +44,26 @@ public class MainActivity extends AppCompatActivity {
 
         setSupportActionBar(binding.appBarMain.toolbar);
 
-        // CONFIGURACIÓN LIMPIA - Sin ActionBarDrawerToggle
-        // La esquina izquierda queda libre para navegación futura
+        // Configurar FAB
+        binding.appBarMain.fab.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Snackbar.make(view, "Crear un nuevo proyecto - Próximamente", Snackbar.LENGTH_LONG)
+                        .setAction("Action", null)
+                        .setAnchorView(R.id.fab).show();
+            }
+        });
+
+        // Configurar Navigation Drawer
+        DrawerLayout drawer = binding.drawerLayout;
+        NavigationView navigationView = binding.navView;
 
         // Configurar Bottom Navigation
         bottomNavigation = binding.appBarMain.bottomNavigation;
         setupBottomNavigation();
 
         // Configurar Navigation Drawer listener
-        setupNavigationDrawer(binding.navView);
-
-        // Configurar FAB
-        binding.appBarMain.fab.setOnClickListener(v ->
-                Snackbar.make(v, "Función rápida - Próximamente", Snackbar.LENGTH_LONG)
-                        .setAction("Action", null)
-                        .setAnchorView(R.id.fab).show()
-        );
+        setupNavigationDrawer(navigationView);
 
         // Cargar fragmento inicial (Proyectos)
         loadFragment(new ProyectosFragment());
@@ -111,29 +117,27 @@ public class MainActivity extends AppCompatActivity {
             int itemId = item.getItemId();
 
             if (itemId == R.id.nav_materiales) {
-                selectedFragment = new GalleryFragment();
+                selectedFragment = new MaterialesFragment();
                 Toast.makeText(this, "Base de Datos de Materiales", Toast.LENGTH_SHORT).show();
             } else if (itemId == R.id.nav_exportacion) {
-                selectedFragment = new SlideshowFragment();
-                Toast.makeText(this, "Exportación", Toast.LENGTH_SHORT).show();
+                selectedFragment = new ExportacionFragment();
+                Toast.makeText(this, "Centro de Exportación", Toast.LENGTH_SHORT).show();
             } else if (itemId == R.id.nav_configuracion) {
-                selectedFragment = new HomeFragment();
+                selectedFragment = new ConfiguracionFragment();
                 Toast.makeText(this, "Configuración", Toast.LENGTH_SHORT).show();
             } else if (itemId == R.id.nav_ayuda) {
-                Toast.makeText(this, "Ayuda", Toast.LENGTH_SHORT).show();
-                binding.drawerLayout.closeDrawer(GravityCompat.START);
-                return true;
+                selectedFragment = new AyudaFragment();
+                Toast.makeText(this, "Centro de Ayuda", Toast.LENGTH_SHORT).show();
             } else if (itemId == R.id.nav_acerca) {
-                Toast.makeText(this, "Acerca de RegenerApp v1.0", Toast.LENGTH_SHORT).show();
-                binding.drawerLayout.closeDrawer(GravityCompat.START);
-                return true;
+                selectedFragment = new AcercaDeFragment();
+                Toast.makeText(this, "Acerca de RegenerApp", Toast.LENGTH_SHORT).show();
             }
 
             if (selectedFragment != null) {
                 loadFragment(selectedFragment);
             }
 
-            binding.drawerLayout.closeDrawer(GravityCompat.START);
+            binding.drawerLayout.closeDrawers();
             return true;
         });
     }
@@ -146,20 +150,24 @@ public class MainActivity extends AppCompatActivity {
 
     private void showProjectRequiredMessage() {
         Toast.makeText(this, getString(R.string.msg_seleccione_proyecto), Toast.LENGTH_LONG).show();
+        // Cambiar automáticamente a la sección de proyectos
         bottomNavigation.setSelectedItemId(R.id.navigation_proyectos);
     }
 
     private void updateNavigationState() {
         Menu menu = bottomNavigation.getMenu();
 
+        // Habilitar/deshabilitar elementos según el estado del proyecto
         menu.findItem(R.id.navigation_calculadora).setEnabled(isProjectSelected);
         menu.findItem(R.id.navigation_presupuestos).setEnabled(isProjectSelected);
         menu.findItem(R.id.navigation_dashboard).setEnabled(isProjectSelected);
 
+        // Proyectos y Proveedores siempre habilitados
         menu.findItem(R.id.navigation_proyectos).setEnabled(true);
         menu.findItem(R.id.navigation_proveedores).setEnabled(true);
     }
 
+    // Método público para que los fragmentos puedan cambiar el estado del proyecto
     public void setProjectSelected(boolean selected, String projectName) {
         this.isProjectSelected = selected;
         this.currentProjectName = projectName;

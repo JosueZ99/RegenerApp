@@ -1,31 +1,29 @@
-package com.regenerarestudio.regenerapp.ui.gallery;
+package com.regenerarestudio.regenerapp.ui.materiales;
 
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
-
 import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
+import com.regenerarestudio.regenerapp.databinding.FragmentMaterialesBinding;
 
-import com.regenerarestudio.regenerapp.databinding.FragmentGalleryBinding;
+public class MaterialesFragment extends Fragment {
 
-public class GalleryFragment extends Fragment {
-
-    private FragmentGalleryBinding binding;
+    private FragmentMaterialesBinding binding;
 
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
-        GalleryViewModel galleryViewModel =
-                new ViewModelProvider(this).get(GalleryViewModel.class);
+        MaterialesViewModel materialesViewModel =
+                new ViewModelProvider(this).get(MaterialesViewModel.class);
 
-        binding = FragmentGalleryBinding.inflate(inflater, container, false);
+        binding = FragmentMaterialesBinding.inflate(inflater, container, false);
         View root = binding.getRoot();
 
-        final TextView textView = binding.textGallery;
-        galleryViewModel.getText().observe(getViewLifecycleOwner(), textView::setText);
+        final TextView textView = binding.textMateriales;
+        materialesViewModel.getText().observe(getViewLifecycleOwner(), textView::setText);
         return root;
     }
 

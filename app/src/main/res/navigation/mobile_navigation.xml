@@ -36,34 +36,34 @@
         android:label="@string/title_proveedores"
         tools:layout="@layout/fragment_proveedores" />
 
-    <!-- Fragmentos del Navigation Drawer (usando los existentes como placeholder) -->
+    <!-- Fragmentos del Navigation Drawer -->
     <fragment
         android:id="@+id/nav_materiales"
-        android:name="com.regenerarestudio.regenerapp.ui.gallery.GalleryFragment"
+        android:name="com.regenerarestudio.regenerapp.ui.materiales.MaterialesFragment"
         android:label="@string/nav_materiales"
-        tools:layout="@layout/fragment_gallery" />
+        tools:layout="@layout/fragment_materiales" />
 
     <fragment
         android:id="@+id/nav_exportacion"
-        android:name="com.regenerarestudio.regenerapp.ui.slideshow.SlideshowFragment"
+        android:name="com.regenerarestudio.regenerapp.ui.exportacion.ExportacionFragment"
         android:label="@string/nav_exportacion"
-        tools:layout="@layout/fragment_slideshow" />
+        tools:layout="@layout/fragment_exportacion" />
 
     <fragment
         android:id="@+id/nav_configuracion"
-        android:name="com.regenerarestudio.regenerapp.ui.home.HomeFragment"
+        android:name="com.regenerarestudio.regenerapp.ui.configuracion.ConfiguracionFragment"
         android:label="@string/nav_configuracion"
-        tools:layout="@layout/fragment_home" />
+        tools:layout="@layout/fragment_configuracion" />
 
     <fragment
         android:id="@+id/nav_ayuda"
-        android:name="com.regenerarestudio.regenerapp.ui.home.HomeFragment"
+        android:name="com.regenerarestudio.regenerapp.ui.ayuda.AyudaFragment"
         android:label="@string/nav_ayuda"
-        tools:layout="@layout/fragment_home" />
+        tools:layout="@layout/fragment_ayuda" />
 
     <fragment
         android:id="@+id/nav_acerca"
-        android:name="com.regenerarestudio.regenerapp.ui.home.HomeFragment"
+        android:name="com.regenerarestudio.regenerapp.ui.acercade.AcercaDeFragment"
         android:label="@string/nav_acerca"
-        tools:layout="@layout/fragment_home" />
+        tools:layout="@layout/fragment_acerca_de" />
 </navigation>

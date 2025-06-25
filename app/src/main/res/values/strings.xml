@@ -23,6 +23,7 @@
     <string name="nav_materiales">Base de Datos de Materiales</string>
     <string name="nav_exportacion">Exportación</string>
     <string name="nav_configuracion">Configuración</string>
+    <string name="nav_support_title">Soporte</string>
     <string name="nav_ayuda">Ayuda</string>
     <string name="nav_acerca">Acerca de</string>
 
