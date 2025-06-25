@@ -3,16 +3,14 @@ package com.regenerarestudio.regenerapp;
 import android.os.Bundle;
 import android.view.View;
 import android.view.Menu;
+import android.view.MenuItem;
 import android.widget.Toast;
 
 import com.google.android.material.snackbar.Snackbar;
 import com.google.android.material.navigation.NavigationView;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 
-import androidx.navigation.NavController;
-import androidx.navigation.Navigation;
-import androidx.navigation.ui.AppBarConfiguration;
-import androidx.navigation.ui.NavigationUI;
+import androidx.core.view.GravityCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.Fragment;
@@ -30,11 +28,10 @@ import com.regenerarestudio.regenerapp.ui.slideshow.SlideshowFragment;
 
 public class MainActivity extends AppCompatActivity {
 
-    private AppBarConfiguration mAppBarConfiguration;
     private ActivityMainBinding binding;
     private BottomNavigationView bottomNavigation;
-    private boolean isProjectSelected = false; // Estado del proyecto
-    private String currentProjectName = ""; // Nombre del proyecto actual
+    private boolean isProjectSelected = false;
+    private String currentProjectName = "";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -45,32 +42,22 @@ public class MainActivity extends AppCompatActivity {
 
         setSupportActionBar(binding.appBarMain.toolbar);
 
-        // Configurar FAB
-        binding.appBarMain.fab.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Snackbar.make(view, "Función rápida - Próximamente", Snackbar.LENGTH_LONG)
-                        .setAction("Action", null)
-                        .setAnchorView(R.id.fab).show();
-            }
-        });
-
-        // Configurar Navigation Drawer
-        DrawerLayout drawer = binding.drawerLayout;
-        NavigationView navigationView = binding.navView;
-
-        mAppBarConfiguration = new AppBarConfiguration.Builder(
-                R.id.nav_materiales, R.id.nav_exportacion, R.id.nav_configuracion,
-                R.id.nav_ayuda, R.id.nav_acerca)
-                .setOpenableLayout(drawer)
-                .build();
+        // CONFIGURACIÓN LIMPIA - Sin ActionBarDrawerToggle
+        // La esquina izquierda queda libre para navegación futura
 
         // Configurar Bottom Navigation
         bottomNavigation = binding.appBarMain.bottomNavigation;
         setupBottomNavigation();
 
         // Configurar Navigation Drawer listener
-        setupNavigationDrawer(navigationView);
+        setupNavigationDrawer(binding.navView);
+
+        // Configurar FAB
+        binding.appBarMain.fab.setOnClickListener(v ->
+                Snackbar.make(v, "Función rápida - Próximamente", Snackbar.LENGTH_LONG)
+                        .setAction("Action", null)
+                        .setAnchorView(R.id.fab).show()
+        );
 
         // Cargar fragmento inicial (Proyectos)
         loadFragment(new ProyectosFragment());
@@ -124,19 +111,21 @@ public class MainActivity extends AppCompatActivity {
             int itemId = item.getItemId();
 
             if (itemId == R.id.nav_materiales) {
-                selectedFragment = new GalleryFragment(); // Placeholder
+                selectedFragment = new GalleryFragment();
                 Toast.makeText(this, "Base de Datos de Materiales", Toast.LENGTH_SHORT).show();
             } else if (itemId == R.id.nav_exportacion) {
-                selectedFragment = new SlideshowFragment(); // Placeholder
+                selectedFragment = new SlideshowFragment();
                 Toast.makeText(this, "Exportación", Toast.LENGTH_SHORT).show();
             } else if (itemId == R.id.nav_configuracion) {
-                selectedFragment = new HomeFragment(); // Placeholder
+                selectedFragment = new HomeFragment();
                 Toast.makeText(this, "Configuración", Toast.LENGTH_SHORT).show();
             } else if (itemId == R.id.nav_ayuda) {
                 Toast.makeText(this, "Ayuda", Toast.LENGTH_SHORT).show();
+                binding.drawerLayout.closeDrawer(GravityCompat.START);
                 return true;
             } else if (itemId == R.id.nav_acerca) {
                 Toast.makeText(this, "Acerca de RegenerApp v1.0", Toast.LENGTH_SHORT).show();
+                binding.drawerLayout.closeDrawer(GravityCompat.START);
                 return true;
             }
 
@@ -144,7 +133,7 @@ public class MainActivity extends AppCompatActivity {
                 loadFragment(selectedFragment);
             }
 
-            binding.drawerLayout.closeDrawers();
+            binding.drawerLayout.closeDrawer(GravityCompat.START);
             return true;
         });
     }
@@ -157,24 +146,20 @@ public class MainActivity extends AppCompatActivity {
 
     private void showProjectRequiredMessage() {
         Toast.makeText(this, getString(R.string.msg_seleccione_proyecto), Toast.LENGTH_LONG).show();
-        // Cambiar automáticamente a la sección de proyectos
         bottomNavigation.setSelectedItemId(R.id.navigation_proyectos);
     }
 
     private void updateNavigationState() {
         Menu menu = bottomNavigation.getMenu();
 
-        // Habilitar/deshabilitar elementos según el estado del proyecto
         menu.findItem(R.id.navigation_calculadora).setEnabled(isProjectSelected);
         menu.findItem(R.id.navigation_presupuestos).setEnabled(isProjectSelected);
         menu.findItem(R.id.navigation_dashboard).setEnabled(isProjectSelected);
 
-        // Proyectos y Proveedores siempre habilitados
         menu.findItem(R.id.navigation_proyectos).setEnabled(true);
         menu.findItem(R.id.navigation_proveedores).setEnabled(true);
     }
 
-    // Método público para que los fragmentos puedan cambiar el estado del proyecto
     public void setProjectSelected(boolean selected, String projectName) {
         this.isProjectSelected = selected;
         this.currentProjectName = projectName;
@@ -206,13 +191,31 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
+        // Inflar menú con ícono hamburguesa en esquina derecha
         getMenuInflater().inflate(R.menu.main, menu);
         return true;
     }
 
     @Override
-    public boolean onSupportNavigateUp() {
-        return NavigationUI.navigateUp(Navigation.findNavController(this, R.id.nav_host_fragment_content_main), mAppBarConfiguration)
-                || super.onSupportNavigateUp();
+    public boolean onOptionsItemSelected(MenuItem item) {
+        // Manejar clic en ícono hamburguesa (esquina derecha)
+        if (item.getItemId() == R.id.action_drawer_menu) {
+            if (binding.drawerLayout.isDrawerOpen(GravityCompat.START)) {
+                binding.drawerLayout.closeDrawer(GravityCompat.START);
+            } else {
+                binding.drawerLayout.openDrawer(GravityCompat.START);
+            }
+            return true;
+        }
+        return super.onOptionsItemSelected(item);
+    }
+
+    @Override
+    public void onBackPressed() {
+        if (binding.drawerLayout.isDrawerOpen(GravityCompat.START)) {
+            binding.drawerLayout.closeDrawer(GravityCompat.START);
+        } else {
+            super.onBackPressed();
+        }
     }
 }
