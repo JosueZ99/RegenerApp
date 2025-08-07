@@ -1,0 +1,42 @@
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!-- Base application theme - Dark Mode. -->
+    <style name="Theme.RegenerApp" parent="Theme.MaterialComponents.DayNight.DarkActionBar">
+        <!-- Primary brand colors. -->
+        <item name="colorPrimary">@color/primary_dark_blue</item>
+        <item name="colorPrimaryVariant">@color/primary_blue_gray</item>
+        <item name="colorOnPrimary">@color/gray_900</item>
+
+        <!-- Secondary brand colors. -->
+        <item name="colorSecondary">@color/secondary_teal</item>
+        <item name="colorSecondaryVariant">@color/secondary_mint</item>
+        <item name="colorOnSecondary">@color/gray_900</item>
+
+        <!-- Surface colors. -->
+        <item name="colorSurface">@color/surface_white</item>
+        <item name="colorOnSurface">@color/gray_800</item>
+
+        <!-- Background colors. -->
+        <item name="android:colorBackground">@color/background_main</item>
+        <item name="colorOnBackground">@color/gray_800</item>
+
+        <!-- Error colors. -->
+        <item name="colorError">@color/error_red</item>
+        <item name="colorOnError">@color/gray_900</item>
+
+        <!-- Status bar color. -->
+        <item name="android:statusBarColor">@color/primary_blue_gray</item>
+
+        <!-- Navigation bar color. -->
+        <item name="android:navigationBarColor">@color/surface_white</item>
+        <item name="android:windowLightNavigationBar" tools:targetApi="27">false</item>
+
+        <!-- Control colors. -->
+        <item name="colorControlActivated">@color/secondary_teal</item>
+        <item name="colorControlHighlight">@color/gray_200</item>
+
+        <!-- Text colors. -->
+        <item name="android:textColorPrimary">@color/gray_800</item>
+        <item name="android:textColorSecondary">@color/gray_600</item>
+        <item name="android:textColorHint">@color/gray_400</item>
+    </style>
+</resources>

@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/mobile_navigation"
+    app:startDestination="@+id/nav_proyectos">
+
+    <!-- Fragmentos del Bottom Navigation -->
+    <fragment
+        android:id="@+id/nav_proyectos"
+        android:name="com.regenerarestudio.regenerapp.ui.proyectos.ProyectosFragment"
+        android:label="@string/title_proyectos"
+        tools:layout="@layout/fragment_proyectos" />
+
+    <fragment
+        android:id="@+id/nav_calculadora"
+        android:name="com.regenerarestudio.regenerapp.ui.calculadora.CalculadoraFragment"
+        android:label="@string/title_calculadora"
+        tools:layout="@layout/fragment_calculadora" />
+
+    <fragment
+        android:id="@+id/nav_presupuestos"
+        android:name="com.regenerarestudio.regenerapp.ui.presupuestos.PresupuestosFragment"
+        android:label="@string/title_presupuestos"
+        tools:layout="@layout/fragment_presupuestos" />
+
+    <fragment
+        android:id="@+id/nav_dashboard_proyecto"
+        android:name="com.regenerarestudio.regenerapp.ui.dashboard.DashboardFragment"
+        android:label="@string/title_dashboard"
+        tools:layout="@layout/fragment_dashboard" />
+
+    <fragment
+        android:id="@+id/nav_proveedores"
+        android:name="com.regenerarestudio.regenerapp.ui.proveedores.ProveedoresFragment"
+        android:label="@string/title_proveedores"
+        tools:layout="@layout/fragment_proveedores" />
+
+    <!-- Fragmentos del Navigation Drawer -->
+    <fragment
+        android:id="@+id/nav_materiales"
+        android:name="com.regenerarestudio.regenerapp.ui.materiales.MaterialesFragment"
+        android:label="@string/nav_materiales"
+        tools:layout="@layout/fragment_materiales" />
+
+    <fragment
+        android:id="@+id/nav_exportacion"
+        android:name="com.regenerarestudio.regenerapp.ui.exportacion.ExportacionFragment"
+        android:label="@string/nav_exportacion"
+        tools:layout="@layout/fragment_exportacion" />
+
+    <fragment
+        android:id="@+id/nav_configuracion"
+        android:name="com.regenerarestudio.regenerapp.ui.configuracion.ConfiguracionFragment"
+        android:label="@string/nav_configuracion"
+        tools:layout="@layout/fragment_configuracion" />
+
+    <fragment
+        android:id="@+id/nav_ayuda"
+        android:name="com.regenerarestudio.regenerapp.ui.ayuda.AyudaFragment"
+        android:label="@string/nav_ayuda"
+        tools:layout="@layout/fragment_ayuda" />
+
+    <fragment
+        android:id="@+id/nav_acerca"
+        android:name="com.regenerarestudio.regenerapp.ui.acercade.AcercaDeFragment"
+        android:label="@string/nav_acerca"
+        tools:layout="@layout/fragment_acerca_de" />
+</navigation>
