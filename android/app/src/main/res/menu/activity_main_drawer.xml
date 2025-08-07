@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:showIn="navigation_view">
+
+    <group android:checkableBehavior="single">
+        <item
+            android:id="@+id/nav_materiales"
+            android:icon="@drawable/ic_database_24"
+            android:title="@string/nav_materiales" />
+        <item
+            android:id="@+id/nav_exportacion"
+            android:icon="@drawable/ic_export_24"
+            android:title="@string/nav_exportacion" />
+        <item
+            android:id="@+id/nav_configuracion"
+            android:icon="@drawable/ic_settings_24"
+            android:title="@string/nav_configuracion" />
+    </group>
+
+    <item android:title="@string/nav_support_title">
+        <menu>
+            <item
+                android:id="@+id/nav_ayuda"
+                android:icon="@drawable/ic_help_24"
+                android:title="@string/nav_ayuda" />
+            <item
+                android:id="@+id/nav_acerca"
+                android:icon="@drawable/ic_info_24"
+                android:title="@string/nav_acerca" />
+        </menu>
+    </item>
+</menu>

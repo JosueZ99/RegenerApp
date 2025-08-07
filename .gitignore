@@ -1,15 +1,92 @@
-*.iml
-.gradle
-/local.properties
-/.idea/caches
-/.idea/libraries
-/.idea/modules.xml
-/.idea/workspace.xml
-/.idea/navEditor.xml
-/.idea/assetWizardSettings.xml
+# ===================================
+# MONOREPO .gitignore - RegenerApp
+# ===================================
+
+# ===== ANDROID ESPECÍFICO =====
+android/local.properties
+android/.gradle/
+android/build/
+android/app/build/
+android/app/release/
+android/captures/
+android/.externalNativeBuild/
+android/.cxx/
+android/app/google-services.json
+
+# Android Studio
+android/.idea/workspace.xml
+android/.idea/tasks.xml
+android/.idea/gradle.xml
+android/.idea/assetWizardSettings.xml
+android/.idea/dictionaries
+android/.idea/libraries/
+android/.idea/jarRepositories.xml
+android/.idea/caches/
+android/.idea/modules.xml
+android/.idea/navEditor.xml
+
+# Keystore files
+android/*.jks
+android/*.keystore
+
+# ===== DJANGO BACKEND =====
+backend/__pycache__/
+backend/*.py[cod]
+backend/*$py.class
+backend/*.so
+backend/.Python
+backend/env/
+backend/venv/
+backend/ENV/
+backend/env.bak/
+backend/venv.bak/
+backend/.env
+backend/.venv
+
+# Django specific
+backend/db.sqlite3
+backend/db.sqlite3-journal
+backend/media/
+backend/staticfiles/
+backend/static/admin/
+backend/static/rest_framework/
+backend/.coverage
+backend/htmlcov/
+
+# ===== DOCKER =====
+.env
+docker-compose.override.yml
+.docker/
+
+# ===== DESPLIEGUE =====
+deployment/secrets/
+deployment/*.pem
+deployment/*.key
+
+# ===== DOCUMENTACIÓN =====
+docs/_build/
+docs/.doctrees/
+
+# ===== SISTEMA =====
 .DS_Store
-/build
-/captures
-.externalNativeBuild
-.cxx
-local.properties
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# ===== IDEs =====
+.vscode/
+*.swp
+*.swo
+*~
+
+# ===== LOGS =====
+*.log
+logs/
+
+# ===== TEMPORAL =====
+*.tmp
+*.temp
+.cache/
