@@ -5,7 +5,7 @@ import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.widget.SearchView;
+import androidx.appcompat.widget.SearchView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -154,7 +154,7 @@ public class ProjectSelectionActivity extends AppCompatActivity {
 
         // Configurar SearchView
         MenuItem searchItem = menu.findItem(R.id.action_search);
-        SearchView searchView = (SearchView) searchItem.getActionView();
+        SearchView searchView = (SearchView) searchItem.getActionView(); // Ahora funcionará correctamente
 
         searchView.setQueryHint("Buscar proyecto...");
         searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {

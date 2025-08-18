@@ -152,35 +152,35 @@
                         android:layout_height="wrap_content"
                         android:text="Todos"
                         android:checked="true"
-                        style="@style/Widget.Material3.Chip.Filter" />
+                        style="@style/Widget.MaterialComponents.Chip.Filter" />
 
                     <com.google.android.material.chip.Chip
                         android:id="@+id/chip_construction"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Construcción"
-                        style="@style/Widget.Material3.Chip.Filter" />
+                        style="@style/Widget.MaterialComponents.Chip.Filter" />
 
                     <com.google.android.material.chip.Chip
                         android:id="@+id/chip_lighting"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Iluminación"
-                        style="@style/Widget.Material3.Chip.Filter" />
+                        style="@style/Widget.MaterialComponents.Chip.Filter" />
 
                     <com.google.android.material.chip.Chip
                         android:id="@+id/chip_electrical"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Eléctrico"
-                        style="@style/Widget.Material3.Chip.Filter" />
+                        style="@style/Widget.MaterialComponents.Chip.Filter" />
 
                     <com.google.android.material.chip.Chip
                         android:id="@+id/chip_finishes"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Acabados"
-                        style="@style/Widget.Material3.Chip.Filter" />
+                        style="@style/Widget.MaterialComponents.Chip.Filter" />
 
                 </com.google.android.material.chip.ChipGroup>
 

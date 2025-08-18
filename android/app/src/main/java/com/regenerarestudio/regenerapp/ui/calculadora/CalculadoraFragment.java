@@ -227,7 +227,7 @@ public class CalculadoraFragment extends Fragment {
         textInputLayout.setHintTextColor(getResources().getColorStateList(R.color.primary_color, null));
         textInputLayout.setHint(label);
         textInputLayout.setHelperText(hint);
-        textInputLayout.setStyle(com.google.android.material.R.style.Widget_Material3_TextInputLayout_OutlinedBox);
+        textInputLayout.setBoxBackgroundMode(TextInputLayout.BOX_BACKGROUND_OUTLINE);
 
         // Configurar parámetros de layout
         LinearLayout.LayoutParams layoutParams = new LinearLayout.LayoutParams(

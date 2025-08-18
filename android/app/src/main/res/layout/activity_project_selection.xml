@@ -108,28 +108,28 @@
                     android:layout_height="wrap_content"
                     android:text="Todos"
                     android:checked="true"
-                    style="@style/Widget.Material3.Chip.Filter" />
+                    style="@style/Widget.MaterialComponents.Chip.Filter" />
 
                 <com.google.android.material.chip.Chip
                     android:id="@+id/chip_design"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="En Diseño"
-                    style="@style/Widget.Material3.Chip.Filter" />
+                    style="@style/Widget.MaterialComponents.Chip.Filter" />
 
                 <com.google.android.material.chip.Chip
                     android:id="@+id/chip_purchase"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="En Compra"
-                    style="@style/Widget.Material3.Chip.Filter" />
+                    style="@style/Widget.MaterialComponents.Chip.Filter" />
 
                 <com.google.android.material.chip.Chip
                     android:id="@+id/chip_installation"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="En Instalación"
-                    style="@style/Widget.Material3.Chip.Filter" />
+                    style="@style/Widget.MaterialComponents.Chip.Filter" />
 
             </com.google.android.material.chip.ChipGroup>
 
