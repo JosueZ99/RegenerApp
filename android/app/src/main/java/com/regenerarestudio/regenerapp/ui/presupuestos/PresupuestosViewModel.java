@@ -5,12 +5,11 @@ import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
 
 public class PresupuestosViewModel extends ViewModel {
-
     private final MutableLiveData<String> mText;
 
     public PresupuestosViewModel() {
         mText = new MutableLiveData<>();
-        mText.setValue("Gestión de Presupuestos\n\nSelecciona un proyecto primero.\n\nFunciones disponibles:\n• Crear presupuesto\n• Seguimiento de gastos\n• Control financiero");
+        mText.setValue("Sistema dual de presupuestos: inicial vs gastos reales");
     }
 
     public LiveData<String> getText() {

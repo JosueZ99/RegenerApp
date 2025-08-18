@@ -3,31 +3,66 @@
     xmlns:tools="http://schemas.android.com/tools"
     tools:showIn="navigation_view">
 
+    <!-- Sección Principal -->
     <group android:checkableBehavior="single">
+
+        <!-- Proveedores - Movido desde bottom navigation -->
+        <item
+            android:id="@+id/nav_proveedores"
+            android:icon="@drawable/ic_business_24"
+            android:title="@string/nav_proveedores" />
+
+        <!-- Base de Datos de Materiales -->
         <item
             android:id="@+id/nav_materiales"
-            android:icon="@drawable/ic_database_24"
+            android:icon="@drawable/ic_inventory_24"
             android:title="@string/nav_materiales" />
+
+        <!-- Exportación -->
         <item
             android:id="@+id/nav_exportacion"
-            android:icon="@drawable/ic_export_24"
+            android:icon="@drawable/ic_upload_24"
             android:title="@string/nav_exportacion" />
-        <item
-            android:id="@+id/nav_configuracion"
-            android:icon="@drawable/ic_settings_24"
-            android:title="@string/nav_configuracion" />
+
     </group>
 
+    <!-- Separador -->
+    <item android:title="@string/nav_project_title">
+        <menu>
+            <!-- Cambiar Proyecto -->
+            <item
+                android:id="@+id/nav_cambiar_proyecto"
+                android:icon="@drawable/ic_swap_24"
+                android:title="@string/nav_cambiar_proyecto" />
+        </menu>
+    </item>
+
+    <!-- Separador -->
+    <item android:title="@string/nav_settings_title">
+        <menu>
+            <!-- Configuración -->
+            <item
+                android:id="@+id/nav_configuracion"
+                android:icon="@drawable/ic_settings_24"
+                android:title="@string/nav_configuracion" />
+        </menu>
+    </item>
+
+    <!-- Separador -->
     <item android:title="@string/nav_support_title">
         <menu>
+            <!-- Ayuda -->
             <item
                 android:id="@+id/nav_ayuda"
                 android:icon="@drawable/ic_help_24"
                 android:title="@string/nav_ayuda" />
+
+            <!-- Acerca de -->
             <item
                 android:id="@+id/nav_acerca"
                 android:icon="@drawable/ic_info_24"
                 android:title="@string/nav_acerca" />
         </menu>
     </item>
+
 </menu>
