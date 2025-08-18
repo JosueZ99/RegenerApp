@@ -10,11 +10,9 @@ import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
 
-import com.google.android.material.card.MaterialCardView;
+import com.regenerarestudio.regenerapp.model.Project;
 import com.regenerarestudio.regenerapp.databinding.ActivityProjectSelectionBinding;
-import com.regenerarestudio.regenerapp.ui.proyectos.Project;
 import com.regenerarestudio.regenerapp.ui.proyectos.ProjectAdapter;
 
 import java.util.ArrayList;
