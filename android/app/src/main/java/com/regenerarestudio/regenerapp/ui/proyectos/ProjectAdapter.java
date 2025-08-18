@@ -10,7 +10,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.chip.Chip;
 import com.regenerarestudio.regenerapp.R;
-import com.regenerarestudio.regenerapp.model.Project;
+import com.regenerarestudio.regenerapp.data.models.Project;
 
 import java.util.List;
 

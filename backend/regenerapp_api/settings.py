@@ -16,8 +16,13 @@ SECRET_KEY = config('SECRET_KEY', default='django-insecure-regenerapp-dev-key-ch
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = config('DEBUG', default=True, cast=bool)
 
-ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1', cast=lambda v: [s.strip() for s in v.split(',')])
-
+ALLOWED_HOSTS = [
+    'localhost',
+    '127.0.0.1',
+    '10.0.2.2',              # IP del emulador Android para conectar al host
+    '192.168.100.7',         # Tu IP local para dispositivos físicos
+    '0.0.0.0',               # Para desarrollo con runserver 0.0.0.0:8000
+]
 # Application definition
 DJANGO_APPS = [
     'django.contrib.admin',
@@ -149,10 +154,26 @@ REST_FRAMEWORK = {
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
-    # Se agregarán más orígenes según necesidad
+    "http://10.0.2.2:8000",           # Emulador Android
+    "http://192.168.100.7:8000",     # Dispositivos físicos Android
+    "http://localhost:8000",
+    "http://127.0.0.1:8000",
 ]
 
-CORS_ALLOW_ALL_ORIGINS = config('CORS_ALLOW_ALL', default=True, cast=bool)  # Solo para desarrollo
+CORS_ALLOW_ALL_ORIGINS = True  # Solo para desarrollo
+
+# Headers adicionales para Android
+CORS_ALLOW_HEADERS = [
+    'accept',
+    'accept-encoding',
+    'authorization',
+    'content-type',
+    'dnt',
+    'origin',
+    'user-agent',
+    'x-csrftoken',
+    'x-requested-with',
+]
 
 # Logging configuration
 LOGGING = {

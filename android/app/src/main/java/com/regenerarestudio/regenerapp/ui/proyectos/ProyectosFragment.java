@@ -11,7 +11,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import com.regenerarestudio.regenerapp.MainActivity;
 import com.regenerarestudio.regenerapp.databinding.FragmentProyectosBinding;
-import com.regenerarestudio.regenerapp.model.Project;
+import com.regenerarestudio.regenerapp.data.models.Project;
 import android.content.Intent;
 import com.regenerarestudio.regenerapp.ProjectSelectionActivity;
 
