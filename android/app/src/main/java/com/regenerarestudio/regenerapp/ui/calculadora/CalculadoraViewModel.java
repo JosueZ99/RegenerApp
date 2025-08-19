@@ -259,7 +259,7 @@ public class CalculadoraViewModel extends ViewModel {
     /**
      * Agregar cálculo al presupuesto
      */
-    public void addCalculationToBudget(int calculationId, Integer supplierId, String spaces, String notes) {
+    public void addCalculationToBudget(int calculationId, Integer supplierId, Double unitPriceOverride, String spaces, String notes) {
         isLoading.setValue(true);
 
         Map<String, Object> parameters = new HashMap<>();
@@ -267,12 +267,18 @@ public class CalculadoraViewModel extends ViewModel {
         if (supplierId != null) {
             parameters.put("supplier_id", supplierId);
         }
+        if (unitPriceOverride != null) {
+            parameters.put("unit_price_override", unitPriceOverride);
+        }
         if (spaces != null && !spaces.trim().isEmpty()) {
             parameters.put("spaces", spaces);
         }
         if (notes != null && !notes.trim().isEmpty()) {
             parameters.put("notes", notes);
         }
+
+        Log.d("CalculadoraViewModel", "=== ENVIANDO AL PRESUPUESTO ===");
+        Log.d("CalculadoraViewModel", "Parámetros enviados: " + parameters.toString());
 
         // Llamada para agregar al presupuesto (calculationId va en la URL)
         Call<Map<String, Object>> call = apiService.addCalculationToBudget(calculationId, parameters);
@@ -283,9 +289,22 @@ public class CalculadoraViewModel extends ViewModel {
                 isLoading.setValue(false);
 
                 if (response.isSuccessful()) {
+                    Log.d("CalculadoraViewModel", "Cálculo agregado al presupuesto exitosamente");
                     isAddedToBudget.setValue(true);
                 } else {
                     String error = "Error al agregar al presupuesto: " + response.code();
+
+                    // Intentar obtener el mensaje de error del servidor
+                    try {
+                        if (response.errorBody() != null) {
+                            String errorBody = response.errorBody().string();
+                            Log.e("CalculadoraViewModel", "Error del servidor: " + errorBody);
+                            error += " - " + errorBody;
+                        }
+                    } catch (Exception e) {
+                        Log.e("CalculadoraViewModel", "Error al leer respuesta de error: " + e.getMessage());
+                    }
+
                     errorMessage.setValue(error);
                 }
             }

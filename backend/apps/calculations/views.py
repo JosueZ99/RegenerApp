@@ -679,16 +679,24 @@ class CalculationViewSet(viewsets.ModelViewSet):
     def add_to_budget(self, request, pk=None):
         """
         Agregar cálculo al presupuesto inicial
-        POST /api/calculations/{id}/add_to_budget/
+        POST /api/calculations/calculations/{id}/add_to_budget/
         """
-        calculation = self.get_object()
+        try:
+            calculation = self.get_object()
+        except Calculation.DoesNotExist:
+            return Response(
+                {'error': 'El cálculo no existe'},
+                status=status.HTTP_404_NOT_FOUND
+            )
         
+        # Validar que el cálculo no haya sido agregado previamente
         if calculation.added_to_budget:
             return Response(
                 {'error': 'Este cálculo ya fue agregado al presupuesto'},
                 status=status.HTTP_400_BAD_REQUEST
             )
         
+        # Validar datos del request
         serializer = AddCalculationToBudgetSerializer(data=request.data)
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

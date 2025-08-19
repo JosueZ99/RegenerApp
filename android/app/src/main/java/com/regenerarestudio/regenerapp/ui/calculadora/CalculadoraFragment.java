@@ -827,15 +827,43 @@ public class CalculadoraFragment extends Fragment {
             return;
         }
 
+        // Preparar información para mostrar en el diálogo
+        String calculationInfo = "Cantidad: " + currentCalculation.getFormattedQuantity() + "\n" +
+                "Costo estimado: " + currentCalculation.getFormattedCost();
+
+        // Si hay proveedor seleccionado, agregarlo al mensaje
+        if (currentCalculation.getSelectedSupplierName() != null) {
+            calculationInfo += "\n" + "Proveedor: " + currentCalculation.getSelectedSupplierName();
+        }
+
         new MaterialAlertDialogBuilder(requireContext())
                 .setTitle("Añadir al Presupuesto")
-                .setMessage("¿Deseas agregar este cálculo al presupuesto inicial del proyecto?\n\n" +
-                        "Cantidad: " + currentCalculation.getFormattedQuantity() + "\n" +
-                        "Costo estimado: " + currentCalculation.getFormattedCost())
+                .setMessage("¿Deseas agregar este cálculo al presupuesto inicial del proyecto?\n\n" + calculationInfo)
                 .setPositiveButton("Añadir", (dialog, which) -> {
+                    // Obtener información del proveedor seleccionado
+                    Long supplierId = currentCalculation.getSelectedSupplierId();
+                    Double unitPriceOverride = null;
+
+                    // Si hay proveedor seleccionado, calcular el precio unitario CON REDONDEO CORRECTO
+                    if (supplierId != null && currentCalculation.getEstimatedCost() != null && currentCalculation.getCalculatedQuantity() > 0) {
+                        double rawPrice = currentCalculation.getEstimatedCost() / currentCalculation.getCalculatedQuantity();
+
+                        // Redondear a 2 decimales usando Math.round
+                        unitPriceOverride = Math.round(rawPrice * 100.0) / 100.0;
+                    }
+
+                    Log.d("CalculadoraFragment", "=== ENVIANDO AL PRESUPUESTO ===");
+                    Log.d("CalculadoraFragment", "Calculation ID: " + currentCalculation.getCalculationId());
+                    Log.d("CalculadoraFragment", "Supplier ID: " + supplierId);
+                    Log.d("CalculadoraFragment", "Unit Price Override: " + unitPriceOverride);
+
+                    // Llamar al ViewModel con la información correcta
                     calculadoraViewModel.addCalculationToBudget(
                             currentCalculation.getCalculationId(),
-                            null, null, "Agregado desde calculadora"
+                            supplierId != null ? supplierId.intValue() : null,
+                            unitPriceOverride,
+                            null, // spaces
+                            "Agregado desde calculadora"
                     );
                 })
                 .setNegativeButton("Cancelar", (dialog, which) -> dialog.dismiss())
