@@ -51,7 +51,7 @@ class MaterialDetailSerializer(serializers.ModelSerializer):
     category = MaterialCategorySerializer(read_only=True)
     specifications = MaterialSpecificationSerializer(many=True, read_only=True)
     unit_display = serializers.CharField(source='get_unit_display', read_only=True)
-    category_type = serializers.CharField(source='category_type', read_only=True)
+    category_type = serializers.CharField(source='category.category_type', read_only=True)
     price_with_waste = serializers.SerializerMethodField()
     
     class Meta:

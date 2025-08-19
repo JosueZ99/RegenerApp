@@ -142,13 +142,20 @@ class MaterialViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
         
-        quantity_needed = material.calculate_quantity_needed(area_or_length, layers)
-        
-        if quantity_needed is None:
+        # Verificar que el material tenga rendimiento configurado
+        if not material.yield_per_unit:
             return Response(
                 {'error': 'Material no tiene rendimiento por unidad configurado'},
                 status=status.HTTP_400_BAD_REQUEST
             )
+        
+        # Calcular cantidad base necesaria
+        base_quantity = (area_or_length * layers) / float(material.yield_per_unit)
+        
+        # Aplicar factor de desperdicio (usar 0.05 si es None)
+        waste_factor = material.waste_factor or 0.05
+        quantity_needed = base_quantity * (1 + float(waste_factor))
+        quantity_needed = round(quantity_needed, 2)
         
         # Calcular costo estimado
         estimated_cost = None
@@ -165,7 +172,7 @@ class MaterialViewSet(viewsets.ModelViewSet):
                 'quantity_needed': quantity_needed,
                 'unit': material.unit,
                 'estimated_cost': estimated_cost,
-                'waste_factor_applied': float(material.waste_factor)
+                'waste_factor_applied': float(waste_factor)
             }
         })
 

@@ -2,6 +2,7 @@ from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.filters import SearchFilter, OrderingFilter
+from rest_framework.decorators import api_view
 from django_filters.rest_framework import DjangoFilterBackend
 from django.db.models import Sum, Count, Q
 from django.shortcuts import get_object_or_404
@@ -328,12 +329,14 @@ class ProjectFinancialSummaryViewSet(viewsets.ReadOnlyModelViewSet):
             'summary': serializer.data
         })
 
-@action(detail=False, methods=['post'])
+@api_view(['POST'])
 def copy_multiple_to_expenses(request):
     """
     Copiar múltiples items del presupuesto a gastos reales
-    POST /api/budget-items/copy_multiple_to_expenses/
+    POST /api/budgets/budget-items/copy-multiple-to-expenses/
     """
+    from .serializers import CopyBudgetToExpenseSerializer, RealExpenseCreateUpdateSerializer
+    
     serializer = CopyBudgetToExpenseSerializer(data=request.data)
     if not serializer.is_valid():
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

@@ -204,10 +204,11 @@ class Material(models.Model):
             return None
         
         # Cantidad base necesaria
-        base_quantity = (area_or_length * layers) / self.yield_per_unit
+        base_quantity = (area_or_length * layers) / float(self.yield_per_unit)
         
-        # Agregar factor de desperdicio
-        final_quantity = base_quantity * (1 + self.waste_factor)
+        # Agregar factor de desperdicio (usar 0.05 si es None)
+        waste_factor = self.waste_factor or 0.05
+        final_quantity = base_quantity * (1 + float(waste_factor))
         
         return round(final_quantity, 2)
 
