@@ -14,12 +14,14 @@ import com.regenerarestudio.regenerapp.data.models.Project;
 import com.regenerarestudio.regenerapp.data.network.NetworkStateManager;
 import com.regenerarestudio.regenerapp.data.responses.DashboardResponse;
 
+import java.util.Map;
+
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
 /**
- * ViewModel actualizado para Dashboard - Conectado con APIs REST
+ * ViewModel actualizado para Dashboard - Conectado con APIs REST - CORREGIDO
  * Maneja datos del proyecto seleccionado, resumen financiero y estadísticas
  */
 public class DashboardViewModel extends AndroidViewModel {
@@ -57,6 +59,7 @@ public class DashboardViewModel extends AndroidViewModel {
 
     /**
      * Cargar datos del dashboard para un proyecto específico
+     * CORREGIDO: Usar getDashboardTyped para mantener el tipo DashboardResponse
      */
     public void loadDashboardData(Long projectId) {
         if (projectId == null || projectId <= 0) {
@@ -79,8 +82,8 @@ public class DashboardViewModel extends AndroidViewModel {
         isLoadingLiveData.setValue(true);
         errorLiveData.setValue(null);
 
-        // Llamada a la API
-        Call<DashboardResponse> call = apiService.getDashboard(projectId);
+        // CORREGIDO: Crear la llamada correctamente usando apiService
+        Call<DashboardResponse> call = apiService.getDashboardTyped(projectId);
 
         call.enqueue(new Callback<DashboardResponse>() {
             @Override

@@ -13,6 +13,7 @@ import java.util.Map;
 
 import retrofit2.Call;
 import retrofit2.http.Body;
+import retrofit2.http.DELETE;
 import retrofit2.http.GET;
 import retrofit2.http.POST;
 import retrofit2.http.PUT;
@@ -27,7 +28,7 @@ import retrofit2.http.QueryMap;
 public interface ApiService {
 
     // ==========================================
-    // PROYECTOS - Projects APIs
+    // PROYECTOS - Projects APIs - CORREGIDO
     // ==========================================
 
     /**
@@ -59,11 +60,19 @@ public interface ApiService {
     Call<ProjectSelectionResponse> selectProject(@Path("id") Long projectId);
 
     /**
-     * Obtener datos del dashboard para un proyecto
+     * Obtener datos del dashboard para un proyecto - CORREGIDO
+     * GET /api/projects/projects/{id}/dashboard/
+     * Retorna Map<String, Object> para mayor flexibilidad
+     */
+    @GET("projects/projects/{id}/dashboard/")
+    Call<Map<String, Object>> getDashboard(@Path("id") Long projectId);
+
+    /**
+     * Obtener datos del dashboard (versión con DashboardResponse si la necesitas)
      * GET /api/projects/projects/{id}/dashboard/
      */
     @GET("projects/projects/{id}/dashboard/")
-    Call<DashboardResponse> getDashboard(@Path("id") Long projectId);
+    Call<DashboardResponse> getDashboardTyped(@Path("id") Long projectId);
 
     /**
      * Crear un nuevo proyecto
@@ -173,49 +182,129 @@ public interface ApiService {
             @Query("material") Long materialId
     );
 
-    // ==========================================
-    // PRESUPUESTOS - Budgets APIs
-    // ==========================================
+// ==========================================
+// PRESUPUESTOS - Budgets APIs - URLS CORREGIDAS COMPLETAS
+// ==========================================
 
     /**
      * Obtener presupuesto inicial de un proyecto
-     * GET /api/budgets/initial/
+     * GET /api/budgets/budget-items/?project={projectId}
      */
-    @GET("budgets/initial/")
+    @GET("budgets/budget-items/")
     Call<List<Map<String, Object>>> getInitialBudget(
             @Query("project") Long projectId
     );
 
     /**
      * Obtener gastos reales de un proyecto
-     * GET /api/budgets/expenses/
+     * GET /api/budgets/real-expenses/?project={projectId}
      */
-    @GET("budgets/expenses/")
+    @GET("budgets/real-expenses/")
     Call<List<Map<String, Object>>> getExpenses(
             @Query("project") Long projectId
     );
 
     /**
-     * Agregar item al presupuesto inicial
-     * POST /api/budgets/initial/
+     * Obtener resumen financiero usando dashboard - MÉTODO OPTIMIZADO
+     * Usa el endpoint de dashboard que ya incluye financial_summary
+     * GET /api/projects/projects/{projectId}/dashboard/
      */
-    @POST("budgets/initial/")
+    default Call<Map<String, Object>> getBudgetSummary(Long projectId) {
+        return getDashboard(projectId);
+    }
+
+    /**
+     * Obtener resumen financiero usando endpoint específico - ALTERNATIVO
+     * GET /api/budgets/financial-summary/?project={projectId}
+     */
+    @GET("budgets/financial-summary/")
+    Call<List<Map<String, Object>>> getFinancialSummaryList(
+            @Query("project") Long projectId
+    );
+
+    /**
+     * Agregar item al presupuesto inicial
+     * POST /api/budgets/budget-items/
+     */
+    @POST("budgets/budget-items/")
     Call<Map<String, Object>> addToBudget(@Body Map<String, Object> budgetItem);
 
     /**
      * Agregar gasto real
-     * POST /api/budgets/expenses/
+     * POST /api/budgets/real-expenses/
      */
-    @POST("budgets/expenses/")
+    @POST("budgets/real-expenses/")
     Call<Map<String, Object>> addExpense(@Body Map<String, Object> expense);
 
     /**
-     * Obtener resumen financiero de un proyecto
-     * GET /api/budgets/summary/
+     * Actualizar item del presupuesto inicial
+     * PUT /api/budgets/budget-items/{id}/
      */
-    @GET("budgets/summary/")
-    Call<Map<String, Object>> getBudgetSummary(
-            @Query("project") Long projectId
+    @PUT("budgets/budget-items/{id}/")
+    Call<Map<String, Object>> updateBudgetItem(
+            @Path("id") Long budgetItemId,
+            @Body Map<String, Object> budgetItem
+    );
+
+    /**
+     * Eliminar item del presupuesto inicial
+     * DELETE /api/budgets/budget-items/{id}/
+     */
+    @DELETE("budgets/budget-items/{id}/")
+    Call<Void> deleteBudgetItem(@Path("id") Long budgetItemId);
+
+    /**
+     * Actualizar gasto real
+     * PUT /api/budgets/real-expenses/{id}/
+     */
+    @PUT("budgets/real-expenses/{id}/")
+    Call<Map<String, Object>> updateExpense(
+            @Path("id") Long expenseId,
+            @Body Map<String, Object> expense
+    );
+
+    /**
+     * Eliminar gasto real
+     * DELETE /api/budgets/real-expenses/{id}/
+     */
+    @DELETE("budgets/real-expenses/{id}/")
+    Call<Void> deleteExpense(@Path("id") Long expenseId);
+
+    /**
+     * Copiar item del presupuesto a gastos reales
+     * POST /api/budgets/budget-items/{id}/copy_to_expense/
+     */
+    @POST("budgets/budget-items/{id}/copy_to_expense/")
+    Call<Map<String, Object>> copyBudgetItemToExpense(
+            @Path("id") Long budgetItemId,
+            @Body Map<String, Object> expenseData
+    );
+
+    /**
+     * Copiar múltiples items del presupuesto a gastos reales
+     * POST /api/budgets/budget-items/copy-multiple-to-expenses/
+     */
+    @POST("budgets/budget-items/copy-multiple-to-expenses/")
+    Call<Map<String, Object>> copyMultipleBudgetItemsToExpenses(
+            @Body Map<String, Object> requestData
+    );
+
+    /**
+     * Obtener resumen del presupuesto por categorías
+     * GET /api/budgets/budget-items/summary_by_category/?project_id={projectId}
+     */
+    @GET("budgets/budget-items/summary_by_category/")
+    Call<Map<String, Object>> getBudgetSummaryByCategory(
+            @Query("project_id") Long projectId
+    );
+
+    /**
+     * Obtener resumen de gastos reales por categorías
+     * GET /api/budgets/real-expenses/summary_by_category/?project_id={projectId}
+     */
+    @GET("budgets/real-expenses/summary_by_category/")
+    Call<Map<String, Object>> getExpensesSummaryByCategory(
+            @Query("project_id") Long projectId
     );
 
     // ==========================================
