@@ -2,6 +2,7 @@ package com.regenerarestudio.regenerapp.ui.calculadora;
 
 import android.app.AlertDialog;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -9,6 +10,7 @@ import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
 import android.widget.LinearLayout;
 import android.widget.Toast;
+import android.app.AlertDialog;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -541,14 +543,49 @@ public class CalculadoraFragment extends Fragment {
     }
 
     private void showProviderSelectionDialog() {
+        // Logging para debugging
+        Log.d("CalculadoraFragment", "=== INICIANDO showProviderSelectionDialog ===");
+
         if (currentCalculation == null) {
+            Log.e("CalculadoraFragment", "currentCalculation es null");
             Toast.makeText(requireContext(), "Error: No hay cálculo disponible", Toast.LENGTH_SHORT).show();
             return;
         }
 
+        Log.d("CalculadoraFragment", "currentCalculation ID: " + currentCalculation.getCalculationId());
+        Log.d("CalculadoraFragment", "Tipo de cálculo: " + currentCalculation.getCalculationType());
+
         // Verificar si hay materiales sugeridos
-        List<CalculationResponse.MaterialSuggestion> materialSuggestions = currentCalculation.getMaterialSuggestions();        if (materialSuggestions == null || materialSuggestions.isEmpty()) {
-            Toast.makeText(requireContext(), "No hay materiales disponibles para este cálculo", Toast.LENGTH_SHORT).show();
+        List<CalculationResponse.MaterialSuggestion> materialSuggestions = currentCalculation.getMaterialSuggestions();
+
+        Log.d("CalculadoraFragment", "materialSuggestions: " + (materialSuggestions != null ? materialSuggestions.size() + " elementos" : "null"));
+
+        if (materialSuggestions != null) {
+            for (int i = 0; i < materialSuggestions.size(); i++) {
+                CalculationResponse.MaterialSuggestion suggestion = materialSuggestions.get(i);
+                Log.d("CalculadoraFragment", "Sugerencia " + i + ": " + suggestion.getName() + " (ID: " + suggestion.getId() + ")");
+            }
+        }
+
+        if (materialSuggestions == null || materialSuggestions.isEmpty()) {
+            Log.w("CalculadoraFragment", "No hay materialSuggestions disponibles");
+
+            // Mostrar diálogo con más información de debugging
+            new MaterialAlertDialogBuilder(requireContext())
+                    .setTitle("No hay materiales disponibles")
+                    .setMessage("No se encontraron materiales para este cálculo.\n\n" +
+                            "Tipo de cálculo: " + currentCalculation.getCalculationType() + "\n" +
+                            "¿Desea continuar sin seleccionar material?")
+                    .setPositiveButton("Continuar sin material", (dialog, which) -> {
+                        // Agregar al presupuesto sin material específico
+                        showAddToBudgetDialog();
+                    })
+                    .setNegativeButton("Cancelar", (dialog, which) -> dialog.dismiss())
+                    .setNeutralButton("Revisar Cálculo", (dialog, which) -> {
+                        // Mostrar información del cálculo para debugging
+                        showCalculationDebugInfo();
+                    })
+                    .show();
             return;
         }
 
@@ -557,19 +594,23 @@ public class CalculadoraFragment extends Fragment {
         Long materialId = (long) selectedMaterial.getId();
         String materialName = selectedMaterial.getName();
 
+        Log.d("CalculadoraFragment", "Material seleccionado: " + materialName + " (ID: " + materialId + ")");
+
         // Mostrar diálogo de carga
         MaterialAlertDialogBuilder loadingDialog = new MaterialAlertDialogBuilder(requireContext())
                 .setTitle("Cargando proveedores...")
                 .setMessage("Buscando proveedores para: " + materialName)
                 .setCancelable(false);
 
-        loadingDialog.show();
+        androidx.appcompat.app.AlertDialog dialog = loadingDialog.show();
 
         // Cargar proveedores para este material
         calculadoraViewModel.loadProvidersForMaterial(materialId, new CalculadoraViewModel.ProvidersCallback() {
             @Override
             public void onProvidersLoaded(List<SupplierWithPrice> providers) {
-                loadingDialog.create().dismiss();
+                dialog.dismiss();
+                Log.d("CalculadoraFragment", "Proveedores cargados: " + providers.size());
+
                 if (providers.isEmpty()) {
                     showNoProvidersDialog(materialName);
                 } else {
@@ -579,10 +620,38 @@ public class CalculadoraFragment extends Fragment {
 
             @Override
             public void onError(String error) {
-                loadingDialog.create().dismiss();
+                dialog.dismiss();
+                Log.e("CalculadoraFragment", "Error cargando proveedores: " + error);
                 Toast.makeText(requireContext(), "Error cargando proveedores: " + error, Toast.LENGTH_LONG).show();
             }
         });
+    }
+
+    // Método auxiliar para mostrar información de debugging
+    private void showCalculationDebugInfo() {
+        if (currentCalculation == null) return;
+
+        StringBuilder debugInfo = new StringBuilder();
+        debugInfo.append("=== INFORMACIÓN DEL CÁLCULO ===\n");
+        debugInfo.append("ID: ").append(currentCalculation.getCalculationId()).append("\n");
+        debugInfo.append("Tipo: ").append(currentCalculation.getCalculationType()).append("\n");
+        debugInfo.append("Cantidad: ").append(currentCalculation.getCalculatedQuantity()).append(" ").append(currentCalculation.getUnit()).append("\n");
+        debugInfo.append("Costo estimado: ").append(currentCalculation.getEstimatedCost() != null ? "$" + currentCalculation.getEstimatedCost() : "Sin costo").append("\n");
+
+        List<CalculationResponse.MaterialSuggestion> suggestions = currentCalculation.getMaterialSuggestions();
+        debugInfo.append("Sugerencias de materiales: ").append(suggestions != null ? suggestions.size() : "null").append("\n");
+
+        if (suggestions != null && !suggestions.isEmpty()) {
+            for (CalculationResponse.MaterialSuggestion suggestion : suggestions) {
+                debugInfo.append("- ").append(suggestion.getName()).append(" (ID: ").append(suggestion.getId()).append(")\n");
+            }
+        }
+
+        new MaterialAlertDialogBuilder(requireContext())
+                .setTitle("Información de Debugging")
+                .setMessage(debugInfo.toString())
+                .setPositiveButton("Cerrar", (dialog, which) -> dialog.dismiss())
+                .show();
     }
 
     private void showNoProvidersDialog(String materialName) {
@@ -598,7 +667,20 @@ public class CalculadoraFragment extends Fragment {
                 .show();
     }
 
+    // Reemplazar el método showProvidersSelectionDialog en CalculadoraFragment.java
+// IMPORTANTE: También agregar import android.app.AlertDialog al inicio del archivo
+
     private void showProvidersSelectionDialog(List<SupplierWithPrice> providers, Long materialId, String materialName) {
+        Log.d("CalculadoraFragment", "=== CREANDO DIÁLOGO DE PROVEEDORES ===");
+        Log.d("CalculadoraFragment", "Total proveedores recibidos: " + providers.size());
+        Log.d("CalculadoraFragment", "Material: " + materialName + " (ID: " + materialId + ")");
+
+        if (providers.isEmpty()) {
+            Log.w("CalculadoraFragment", "Lista de proveedores está vacía");
+            showNoProvidersDialog(materialName);
+            return;
+        }
+
         // Crear lista de nombres de proveedores para el diálogo
         String[] providerNames = new String[providers.size()];
         for (int i = 0; i < providers.size(); i++) {
@@ -606,48 +688,92 @@ public class CalculadoraFragment extends Fragment {
             providerNames[i] = provider.getSupplierName() + " - $" +
                     String.format("%.2f", provider.getPrice()) +
                     " (" + provider.getDeliveryTime() + ")";
+
+            Log.d("CalculadoraFragment", "Proveedor " + i + ": " + providerNames[i]);
         }
 
-        new MaterialAlertDialogBuilder(requireContext())
+        Log.d("CalculadoraFragment", "Usando AlertDialog.Builder estándar...");
+
+        // USAR ALERTDIALOG ESTÁNDAR EN LUGAR DE MATERIAL
+        AlertDialog.Builder builder = new AlertDialog.Builder(requireContext())
                 .setTitle("Seleccionar Proveedor")
-                .setMessage("Material: " + materialName)
-                .setSingleChoiceItems(providerNames, -1, null)
-                .setPositiveButton("Seleccionar", (dialog, which) -> {
-                    int selectedIndex = ((AlertDialog) dialog).getListView().getCheckedItemPosition();
-                    if (selectedIndex >= 0) {
-                        SupplierWithPrice selectedProvider = providers.get(selectedIndex);
-                        updateCalculationWithProvider(selectedProvider, materialId);
-                        dialog.dismiss();
-                    } else {
-                        Toast.makeText(requireContext(), "Por favor seleccione un proveedor", Toast.LENGTH_SHORT).show();
-                    }
+                .setMessage("Material: " + materialName + "\n\nSeleccione un proveedor:")
+                .setItems(providerNames, (dialog, which) -> {
+                    // Selección directa
+                    Log.d("CalculadoraFragment", "Proveedor seleccionado: " + which + " - " + providerNames[which]);
+
+                    SupplierWithPrice selectedProvider = providers.get(which);
+                    Log.d("CalculadoraFragment", "Actualizando cálculo con proveedor: " + selectedProvider.getSupplierName());
+
+                    updateCalculationWithProvider(selectedProvider, materialId);
+                    dialog.dismiss();
                 })
-                .setNegativeButton("Cancelar", (dialog, which) -> dialog.dismiss())
-                .show();
+                .setNegativeButton("Cancelar", (dialog, which) -> {
+                    Log.d("CalculadoraFragment", "Diálogo cancelado");
+                    dialog.dismiss();
+                });
+
+        Log.d("CalculadoraFragment", "Mostrando AlertDialog estándar...");
+        AlertDialog dialog = builder.create();
+        dialog.show();
+
+        Log.d("CalculadoraFragment", "AlertDialog mostrado exitosamente");
     }
 
-    private void updateCalculationWithProvider(SupplierWithPrice provider, Long materialId) {
-        // Calcular nuevo costo estimado
-        double quantity = currentCalculation.getCalculatedQuantity();
-        double estimatedCost = quantity * provider.getPrice();
+// Mantener los otros métodos igual:
 
-        // Actualizar el objeto de cálculo actual
-        currentCalculation.setEstimatedCost(estimatedCost);
-        currentCalculation.setSelectedSupplierId(provider.getSupplierId());
-        currentCalculation.setSelectedSupplierName(provider.getSupplierName());
+    private void updateCalculationWithProvider(SupplierWithPrice selectedProvider, Long materialId) {
+        Log.d("CalculadoraFragment", "=== ACTUALIZANDO CÁLCULO CON PROVEEDOR ===");
+        Log.d("CalculadoraFragment", "Proveedor: " + selectedProvider.getSupplierName());
+        Log.d("CalculadoraFragment", "Precio: $" + selectedProvider.getPrice());
+        Log.d("CalculadoraFragment", "Material ID: " + materialId);
+
+        if (currentCalculation == null) {
+            Log.e("CalculadoraFragment", "currentCalculation es null");
+            Toast.makeText(requireContext(), "Error: No hay cálculo disponible", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        // Actualizar el cálculo con la información del proveedor
+        currentCalculation.setSelectedSupplierId(selectedProvider.getSupplierId());
+        currentCalculation.setSelectedSupplierName(selectedProvider.getSupplierName());
         currentCalculation.setSelectedMaterialId(materialId);
 
-        // Actualizar la UI
-        binding.tvResultCost.setText(String.format("$%.2f", estimatedCost));
-        binding.tvResultCost.setTextColor(getResources().getColor(R.color.success, null));
+        // Calcular nuevo costo estimado basado en la cantidad y precio del proveedor
+        double newEstimatedCost = currentCalculation.getCalculatedQuantity() * selectedProvider.getPrice();
+        currentCalculation.setEstimatedCost(newEstimatedCost);
 
-        // Cambiar el botón a "Añadir al Presupuesto"
+        Log.d("CalculadoraFragment", "Nuevo costo estimado: $" + newEstimatedCost);
+
+        // Actualizar la UI para mostrar el nuevo costo
+        updateResultDisplay();
+
+        // Mostrar mensaje de confirmación
+        Toast.makeText(requireContext(),
+                "Proveedor seleccionado: " + selectedProvider.getSupplierName() +
+                        " - Nuevo costo: $" + String.format("%.2f", newEstimatedCost),
+                Toast.LENGTH_LONG).show();
+    }
+
+    private void updateResultDisplay() {
+        if (currentCalculation == null) return;
+
+        Log.d("CalculadoraFragment", "Actualizando visualización del resultado");
+
+        // Actualizar el costo mostrado
+        if (binding.tvResultCost != null) {
+            binding.tvResultCost.setText(currentCalculation.getFormattedCost());
+
+            // Cambiar color si ahora tiene precio
+            if (currentCalculation.getEstimatedCost() != null && currentCalculation.getEstimatedCost() > 0) {
+                binding.tvResultCost.setTextColor(getResources().getColor(R.color.success, null));
+            }
+        }
+
+        // Actualizar el botón de acción
         setupActionButton();
 
-        // Mostrar confirmación
-        Toast.makeText(requireContext(),
-                "Proveedor seleccionado: " + provider.getSupplierName(),
-                Toast.LENGTH_SHORT).show();
+        Log.d("CalculadoraFragment", "Visualización actualizada");
     }
 
     private void populateDetails(CalculationResponse result) {

@@ -38,9 +38,11 @@ class Command(BaseCommand):
                 self._create_categories()
                 self._create_calculation_types()
                 self._create_materials()
+                self._create_profile_materials_by_size()  # NUEVO
                 self._create_suppliers()
                 self._create_projects()
                 self._create_supplier_prices()
+                self._create_profile_supplier_prices()  # NUEVO
                 self._create_financial_summaries()
                 
             self.stdout.write(
@@ -172,7 +174,7 @@ class Command(BaseCommand):
                     'installation_type': {'type': 'choice', 'label': 'Instalación', 'choices': ['Conduit', 'Directo']}
                 }
             },
-                        {
+            {
                 'name': 'Calculadora de Empaste',
                 'code': 'empaste',
                 'category': 'construction',
@@ -208,16 +210,15 @@ class Command(BaseCommand):
                 self.stdout.write(f'  ✓ Creada: {calc_type.name}')
 
     def _create_materials(self):
-        """Crear materiales"""
+        """Crear materiales base"""
         from apps.materials.models import Material, MaterialCategory
         
-        self.stdout.write('🧱 Creando materiales...')
+        self.stdout.write('🧱 Creando materiales base...')
         
         # Obtener categorías
         cat_pintura = MaterialCategory.objects.get(name='Pintura y Acabados')
         cat_gypsum = MaterialCategory.objects.get(name='Drywall y Sistemas')
         cat_led = MaterialCategory.objects.get(name='Cintas y Tiras LED')
-        cat_perfil = MaterialCategory.objects.get(name='Perfiles de Aluminio')
         cat_cable = MaterialCategory.objects.get(name='Cables Eléctricos')
         cat_driver = MaterialCategory.objects.get(name='Controladores y Drivers')
         
@@ -278,15 +279,6 @@ class Command(BaseCommand):
                 'power_per_meter': Decimal('9.60')
             },
             
-            # Perfiles
-            {
-                'name': 'Perfil Aluminio Empotrar 17x7mm',
-                'code': 'PERF-ALU-17x7',
-                'category': cat_perfil,
-                'unit': 'metros',
-                'reference_price': Decimal('15.60')
-            },
-            
             # Cables
             {
                 'name': 'Cable THHN 12AWG',
@@ -315,14 +307,78 @@ class Command(BaseCommand):
             if created:
                 self.stdout.write(f'  ✓ Creado: {material.name}')
 
+    def _create_profile_materials_by_size(self):
+        """Crear materiales de perfiles por tamaños específicos"""
+        from apps.materials.models import Material, MaterialCategory
+        
+        self.stdout.write('🔧 Creando materiales de perfiles por tamaños...')
+        
+        # Obtener la categoría de perfiles
+        try:
+            cat_perfil = MaterialCategory.objects.get(name='Perfiles de Aluminio')
+        except MaterialCategory.DoesNotExist:
+            self.stdout.write('  ❌ Error: Categoría "Perfiles de Aluminio" no encontrada')
+            return
+        
+        # Definir materiales según las opciones del frontend
+        profile_materials = [
+            {
+                'name': 'Perfil Aluminio Empotrado 16mm',
+                'code': 'PERF-ALU-16MM',
+                'size': '16mm',
+                'reference_price': Decimal('13.20')
+            },
+            {
+                'name': 'Perfil Aluminio Empotrado 20mm', 
+                'code': 'PERF-ALU-20MM',
+                'size': '20mm',
+                'reference_price': Decimal('15.80')
+            },
+            {
+                'name': 'Perfil Aluminio Empotrado 25mm',
+                'code': 'PERF-ALU-25MM', 
+                'size': '25mm',
+                'reference_price': Decimal('18.50')
+            },
+            {
+                'name': 'Perfil Aluminio Empotrado 30mm',
+                'code': 'PERF-ALU-30MM',
+                'size': '30mm', 
+                'reference_price': Decimal('22.40')
+            }
+        ]
+        
+        # Crear materiales
+        created_count = 0
+        for mat_data in profile_materials:
+            material, created = Material.objects.get_or_create(
+                code=mat_data['code'],
+                defaults={
+                    'name': mat_data['name'],
+                    'category': cat_perfil,
+                    'description': f'Perfil de aluminio para empotrar de {mat_data["size"]}',
+                    'unit': 'metros',
+                    'yield_per_unit': None,
+                    'waste_factor': Decimal('0.10'),
+                    'reference_price': mat_data['reference_price'],
+                    'is_active': True
+                }
+            )
+            
+            if created:
+                created_count += 1
+                self.stdout.write(f'  ✓ Perfil {mat_data["size"]}: {material.name} - ${material.reference_price}')
+        
+        self.stdout.write(f'  📊 Total perfiles creados: {created_count}')
+
     def _create_suppliers(self):
         """Crear proveedores"""
         from apps.suppliers.models import Supplier
-        from apps.materials.models import MaterialCategory
         
         self.stdout.write('🏪 Creando proveedores...')
         
         suppliers = [
+            # Proveedores de construcción
             {
                 'name': 'Ferretería El Constructor',
                 'commercial_name': 'El Constructor',
@@ -335,8 +391,10 @@ class Command(BaseCommand):
                 'zone': 'Centro Norte',
                 'rating': 4,
                 'payment_terms': '30 días',
+                'delivery_time': '2-3 días',
                 'is_preferred': True
             },
+            # Proveedores de iluminación especializados
             {
                 'name': 'LED Ecuador Lighting',
                 'commercial_name': 'LED Ecuador',
@@ -344,44 +402,74 @@ class Command(BaseCommand):
                 'contact_person': 'Roberto Silva',
                 'phone': '+593987123456',
                 'email': 'ventas@ledecuador.com',
-                'address': 'Av. Naciones Unidas E2-17',
+                'address': 'Av. República del Salvador N36-84',
                 'city': 'Quito',
-                'zone': 'Norte',
-                'rating': 5,
-                'is_preferred': True
+                'zone': 'Centro Norte',
+                'rating': 4,
+                'payment_terms': '15 días',
+                'delivery_time': '2-3 días',
+                'is_preferred': True,
+                'is_active': True
             },
+            {
+                'name': 'Perfiles Andinos CA',
+                'commercial_name': 'Perfiles Andinos',
+                'supplier_type': 'lighting', 
+                'contact_person': 'María González',
+                'phone': '+593987654321',
+                'email': 'ventas@perfilesandinos.com',
+                'address': 'Av. Eloy Alfaro N30-350',
+                'city': 'Quito',
+                'zone': 'La Carolina',
+                'rating': 4,
+                'payment_terms': '30 días',
+                'delivery_time': '1-2 días',
+                'is_preferred': False,
+                'is_active': True
+            },
+            {
+                'name': 'Materiales Premium Quito',
+                'commercial_name': 'Materiales Premium',
+                'supplier_type': 'lighting',
+                'contact_person': 'Carlos Mendoza',
+                'phone': '+593998765432',
+                'email': 'ventas@materialespremium.ec',
+                'address': 'Av. Amazonas N24-155',
+                'city': 'Quito',
+                'zone': 'La Mariscal',
+                'rating': 5,
+                'payment_terms': '15 días',
+                'delivery_time': '1 día',
+                'is_preferred': True,
+                'is_active': True
+            },
+            # Proveedor eléctrico
             {
                 'name': 'ElectroAndina CIA. LTDA.',
                 'commercial_name': 'ElectroAndina',
                 'supplier_type': 'electrical',
                 'contact_person': 'Miguel Torres',
                 'phone': '+593987456123',
-                'address': 'Av. América N39-17',
+                'email': 'ventas@electroandina.com',
+                'address': 'Av. Naciones Unidas E4-36',
                 'city': 'Quito',
                 'zone': 'Norte',
-                'rating': 4
+                'rating': 4,
+                'is_preferred': False
             }
         ]
         
-        for sup_data in suppliers:
+        created_count = 0
+        for supplier_data in suppliers:
             supplier, created = Supplier.objects.get_or_create(
-                name=sup_data['name'],
-                defaults=sup_data
+                name=supplier_data['name'],
+                defaults=supplier_data
             )
             if created:
+                created_count += 1
                 self.stdout.write(f'  ✓ Creado: {supplier.name}')
-                
-                # Asignar categorías
-                if supplier.supplier_type == 'materials':
-                    cats = MaterialCategory.objects.filter(category_type__in=['construction'])
-                elif supplier.supplier_type == 'lighting':
-                    cats = MaterialCategory.objects.filter(category_type='lighting')
-                elif supplier.supplier_type == 'electrical':
-                    cats = MaterialCategory.objects.filter(category_type='electrical')
-                else:
-                    cats = MaterialCategory.objects.all()
-                
-                supplier.categories.set(cats)
+        
+        self.stdout.write(f'  📊 Total proveedores creados: {created_count}')
 
     def _create_projects(self):
         """Crear proyectos de ejemplo"""
@@ -392,19 +480,19 @@ class Command(BaseCommand):
         projects = [
             {
                 'name': 'Casa Moderna Cumbayá',
-                'client': 'Juan Pérez Morales',
-                'location': 'Cumbayá, Los Almendros',
+                'client': 'Familia Martínez',
+                'location': 'Cumbayá, Urbanización Los Eucaliptos',
                 'project_type': 'residential',
-                'description': 'Iluminación arquitectónica integral para casa de 280m²',
+                'description': 'Iluminación LED para casa de 280m² con jardín',
                 'start_date': date(2025, 1, 15),
                 'end_date': date(2025, 4, 30),
-                'initial_budget': Decimal('12500.00'),
-                'is_selected': True,
-                'drive_folder_url': 'https://drive.google.com/drive/folders/casa-moderna-cumbaya'
+                'initial_budget': Decimal('12450.00'),
+                'status': 'planning',
+                'is_selected': True  # Proyecto seleccionado por defecto
             },
             {
-                'name': 'Oficina Corporativa TechSolutions',
-                'client': 'TechSolutions Ecuador S.A.',
+                'name': 'Oficinas Corp Tower',
+                'client': 'TechSolutions Cía. Ltda.',
                 'location': 'Av. República del Salvador',
                 'project_type': 'commercial',
                 'description': 'Iluminación LED para oficinas de 450m²',
@@ -427,39 +515,159 @@ class Command(BaseCommand):
             }
         ]
         
+        created_count = 0
         for proj_data in projects:
             project, created = Project.objects.get_or_create(
                 name=proj_data['name'],
                 defaults=proj_data
             )
             if created:
+                created_count += 1
                 self.stdout.write(f'  ✓ Creado: {project.name}')
+                if proj_data.get('is_selected'):
+                    self.stdout.write(f'    → Seleccionado como proyecto activo')
+        
+        self.stdout.write(f'  📊 Total proyectos creados: {created_count}')
 
     def _create_supplier_prices(self):
-        """Crear precios de proveedores"""
+        """Crear precios de proveedores para materiales base"""
         from apps.suppliers.models import Supplier, SupplierPrice
         from apps.materials.models import Material
+        from datetime import date
         
         self.stdout.write('💰 Creando precios de proveedores...')
         
-        # Precios El Constructor
-        try:
-            constructor = Supplier.objects.get(name='Ferretería El Constructor')
-            pintura = Material.objects.get(code='PINT-LAT-001')
+        # Precios para materiales base
+        price_mappings = [
+            # Pintura - El Constructor
+            ('Ferretería El Constructor', 'PINT-LAT-001', Decimal('28.50'), Decimal('5.00')),
+            # LED - LED Ecuador
+            ('LED Ecuador Lighting', 'LED-5050-12V', Decimal('8.50'), Decimal('3.00')),
+            ('LED Ecuador Lighting', 'LED-2835-24V', Decimal('12.80'), Decimal('5.00')),
+            # Cables - ElectroAndina  
+            ('ElectroAndina CIA. LTDA.', 'CABLE-THHN-12', Decimal('85.50'), Decimal('2.00')),
+        ]
+        
+        created_count = 0
+        for supplier_name, material_code, price, discount in price_mappings:
+            try:
+                supplier = Supplier.objects.get(name=supplier_name)
+                material = Material.objects.get(code=material_code)
+                
+                supplier_price, created = SupplierPrice.objects.get_or_create(
+                    supplier=supplier,
+                    material=material,
+                    defaults={
+                        'price': price,
+                        'currency': 'USD',
+                        'discount_percentage': discount,
+                        'bulk_discount_threshold': Decimal('100.0'),
+                        'bulk_discount_percentage': Decimal('10.0'),
+                        'valid_from': date.today(),
+                        'valid_until': None,
+                        'is_current': True
+                    }
+                )
+                
+                if created:
+                    created_count += 1
+                    self.stdout.write(f'  ✓ {supplier.commercial_name}: {material.name} - ${price}')
+                    
+            except (Supplier.DoesNotExist, Material.DoesNotExist) as e:
+                self.stdout.write(f'  ⚠️  Error: {e}')
+        
+        self.stdout.write(f'  📊 Precios base creados: {created_count}')
+
+    def _create_profile_supplier_prices(self):
+        """Crear precios de proveedores para todos los perfiles"""
+        from apps.materials.models import Material
+        from apps.suppliers.models import Supplier, SupplierPrice
+        from datetime import date
+        
+        self.stdout.write('🔧 Creando precios de perfiles...')
+        
+        # Obtener materiales de perfiles
+        profile_materials = Material.objects.filter(
+            name__icontains='Perfil Aluminio',
+            is_active=True
+        ).order_by('name')
+        
+        if not profile_materials.exists():
+            self.stdout.write('  ⚠️  No se encontraron materiales de perfiles')
+            return
+        
+        # Obtener proveedores de iluminación
+        lighting_suppliers = Supplier.objects.filter(
+            supplier_type='lighting',
+            is_active=True
+        )
+        
+        if not lighting_suppliers.exists():
+            self.stdout.write('  ⚠️  No se encontraron proveedores de iluminación')
+            return
+        
+        # Factores de descuento por proveedor
+        supplier_discount_factors = {
+            'LED Ecuador Lighting': Decimal('0.95'),     # 5% descuento
+            'Perfiles Andinos CA': Decimal('0.97'),     # 3% descuento  
+            'Materiales Premium Quito': Decimal('0.93') # 7% descuento
+        }
+        
+        created_count = 0
+        self.stdout.write(f'  📦 Procesando {profile_materials.count()} materiales de perfiles...')
+        
+        for material in profile_materials:
+            self.stdout.write(f'    🔧 {material.name}:')
             
-            SupplierPrice.objects.get_or_create(
-                supplier=constructor,
-                material=pintura,
-                defaults={
-                    'price': Decimal('28.50'),
-                    'discount_percentage': Decimal('5.00'),
-                    'valid_from': date.today(),
-                    'is_current': True
-                }
-            )
-            self.stdout.write(f'  ✓ Precio creado: {constructor.name} - {pintura.name}')
-        except Exception as e:
-            self.stdout.write(f'  ⚠️  Error creando precio: {e}')
+            for supplier in lighting_suppliers:
+                # Calcular precio basado en el precio de referencia del material
+                base_price = material.reference_price
+                discount_factor = supplier_discount_factors.get(supplier.name, Decimal('1.0'))
+                final_price = base_price * discount_factor
+                
+                # Crear precio usando SOLO los campos que existen en el modelo
+                supplier_price, created = SupplierPrice.objects.get_or_create(
+                    supplier=supplier,
+                    material=material,
+                    defaults={
+                        'price': final_price,
+                        'currency': 'USD',
+                        'discount_percentage': Decimal('0.0'),
+                        'bulk_discount_threshold': Decimal('50.0'),  # Campo correcto
+                        'bulk_discount_percentage': Decimal('5.0'),
+                        'valid_from': date.today(),
+                        'valid_until': None,
+                        'is_current': True
+                    }
+                )
+                
+                if created:
+                    created_count += 1
+                    self.stdout.write(f'      ✓ {supplier.commercial_name}: ${final_price:.2f}')
+        
+        self.stdout.write(f'  📊 Total precios de perfiles creados: {created_count}')
+        
+        # Mostrar matriz de precios
+        self.stdout.write(f'\n  📋 MATRIZ DE PRECIOS DE PERFILES:')
+        self.stdout.write('  ' + '-' * 85)
+        self.stdout.write('  Material                        | LED Ecuador | Perfiles A. | Premium   ')
+        self.stdout.write('  ' + '-' * 85)
+        
+        for material in profile_materials:
+            material_name = material.name.replace('Perfil Aluminio Empotrado ', '').ljust(30)
+            prices = SupplierPrice.objects.filter(
+                material=material, 
+                is_current=True
+            ).order_by('supplier__name')
+            
+            price_values = []
+            for price in prices:
+                price_values.append(f"${price.price:>7.2f}")
+            
+            while len(price_values) < 3:
+                price_values.append("     N/A")
+            
+            self.stdout.write(f'  {material_name} | {price_values[0]} | {price_values[1]} | {price_values[2]}')
 
     def _create_financial_summaries(self):
         """Crear resúmenes financieros"""
@@ -468,35 +676,59 @@ class Command(BaseCommand):
         
         self.stdout.write('📊 Creando resúmenes financieros...')
         
+        created_count = 0
         for project in Project.objects.all():
             summary, created = ProjectFinancialSummary.objects.get_or_create(
                 project=project
             )
             if created:
+                created_count += 1
                 summary.update_summary()
                 self.stdout.write(f'  ✓ Resumen: {project.name}')
+        
+        self.stdout.write(f'  📊 Resúmenes creados: {created_count}')
 
     def _print_summary(self):
         """Mostrar resumen final"""
         from apps.materials.models import MaterialCategory, Material
-        from apps.suppliers.models import Supplier
+        from apps.suppliers.models import Supplier, SupplierPrice
         from apps.projects.models import Project
         from apps.calculations.models import CalculationType
         
-        self.stdout.write('\n📊 RESUMEN FINAL:')
-        self.stdout.write(f'  📂 Categorías: {MaterialCategory.objects.count()}')
-        self.stdout.write(f'  🧱 Materiales: {Material.objects.count()}')
+        self.stdout.write('\n' + '='*60)
+        self.stdout.write('📊 RESUMEN FINAL DE CONFIGURACIÓN:')
+        self.stdout.write('='*60)
+        
+        self.stdout.write(f'  📂 Categorías de materiales: {MaterialCategory.objects.count()}')
+        self.stdout.write(f'  🧱 Materiales totales: {Material.objects.count()}')
+        
+        # Desglose de materiales por categoría
+        for category in MaterialCategory.objects.all():
+            count = Material.objects.filter(category=category).count()
+            self.stdout.write(f'    └─ {category.name}: {count} materiales')
+        
         self.stdout.write(f'  🏪 Proveedores: {Supplier.objects.count()}')
+        self.stdout.write(f'  💰 Precios configurados: {SupplierPrice.objects.filter(is_current=True).count()}')
         self.stdout.write(f'  🏗️ Proyectos: {Project.objects.count()}')
         self.stdout.write(f'  🧮 Calculadoras: {CalculationType.objects.count()}')
         
         try:
             selected = Project.objects.get(is_selected=True)
-            self.stdout.write(f'  ✅ Seleccionado: {selected.name}')
+            self.stdout.write(f'  ✅ Proyecto seleccionado: {selected.name}')
         except Project.DoesNotExist:
             self.stdout.write('  ⚠️  No hay proyecto seleccionado')
         
-        self.stdout.write('\n🎉 ¡RegenerApp listo!')
-        self.stdout.write('   🔗 Admin: http://127.0.0.1:8000/admin/')
-        self.stdout.write('   🔗 APIs: http://127.0.0.1:8000/api/')
-        self.stdout.write('   📱 Conecta ahora el Android!')
+        # Verificar configuración de perfiles
+        profile_materials = Material.objects.filter(name__icontains='Perfil Aluminio')
+        if profile_materials.exists():
+            self.stdout.write(f'\n  🔧 CONFIGURACIÓN DE PERFILES:')
+            for material in profile_materials.order_by('name'):
+                size = material.name.split()[-1]
+                price_count = SupplierPrice.objects.filter(material=material, is_current=True).count()
+                self.stdout.write(f'    ✓ {size}: {price_count} proveedores configurados')
+        
+        self.stdout.write('\n🎉 ¡REGENERAPP CONFIGURADO EXITOSAMENTE!')
+        self.stdout.write('   🔗 Panel Admin: http://127.0.0.1:8000/admin/')
+        self.stdout.write('   🔗 APIs REST: http://127.0.0.1:8000/api/')
+        self.stdout.write('   📱 ¡Conecta la aplicación Android!')
+        self.stdout.write('\n' + '='*60)

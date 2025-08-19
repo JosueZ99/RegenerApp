@@ -168,7 +168,7 @@ public interface ApiService {
      * GET /api/suppliers/prices/
      */
     @GET("suppliers/prices/")
-    Call<List<Map<String, Object>>> getSupplierPrices(
+    Call<PaginatedResponse<Map<String, Object>>> getSupplierPrices(
             @Query("supplier") Long supplierId,
             @Query("material") Long materialId
     );

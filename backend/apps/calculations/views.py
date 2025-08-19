@@ -672,7 +672,7 @@ class CalculationViewSet(viewsets.ModelViewSet):
                 'profiles_needed': profiles_needed,
                 'accessories_count': accessories_count
             },
-            'material_suggestions': self._get_material_suggestions('lighting', 'perfil')
+            'material_suggestions': self._get_material_suggestions('lighting', 'perfil', profile_size)
         })
     
     @action(detail=True, methods=['post'])
@@ -736,17 +736,55 @@ class CalculationViewSet(viewsets.ModelViewSet):
         
         return Response(budget_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
-    def _get_material_suggestions(self, category_type, material_type_filter=None):
+    def _get_material_suggestions(self, category_type, material_type_filter=None, size_filter=None):
         """
         Obtener sugerencias de materiales para el tipo de cálculo
         """
-        materials = Material.objects.filter(
-            category__category_type=category_type,
-            is_active=True
-        )
+        import logging
+        logger = logging.getLogger(__name__)
         
-        if material_type_filter:
-            materials = materials.filter(name__icontains=material_type_filter)
-        
-        from apps.materials.serializers import MaterialForCalculatorSerializer
-        return MaterialForCalculatorSerializer(materials[:5], many=True).data
+        try:
+            # Filtro base por categoría y activos
+            materials = Material.objects.filter(
+                category__category_type=category_type,
+                is_active=True
+            )
+            
+            logger.info(f"Materiales encontrados para {category_type}: {materials.count()}")
+            
+            # Aplicar filtro de tipo de material si se proporciona
+            if material_type_filter:
+                materials = materials.filter(name__icontains=material_type_filter)
+                logger.info(f"Después de filtrar por '{material_type_filter}': {materials.count()}")
+            
+            # Aplicar filtro de tamaño si se proporciona (NUEVO)
+            if size_filter:
+                # Buscar materiales que contengan el tamaño en el nombre
+                materials_with_size = materials.filter(name__icontains=size_filter)
+                logger.info(f"Después de filtrar por tamaño '{size_filter}': {materials_with_size.count()}")
+                
+                # Si encuentra materiales con el tamaño exacto, usar esos
+                if materials_with_size.exists():
+                    materials = materials_with_size
+                    logger.info(f"✅ Usando materiales con tamaño específico: {size_filter}")
+                else:
+                    logger.warning(f"⚠️ No se encontraron materiales para tamaño '{size_filter}', usando materiales generales")
+                    # Mantener materiales generales si no encuentra específicos
+            
+            # Log de materiales encontrados
+            for material in materials[:5]:
+                logger.info(f"Material encontrado: {material.name} - {material.code} (${material.reference_price})")
+            
+            # Serializar los materiales (ordenar por precio si tienen)
+            materials = materials.order_by('reference_price')
+            
+            from apps.materials.serializers import MaterialForCalculatorSerializer
+            serialized_data = MaterialForCalculatorSerializer(materials[:5], many=True).data
+            
+            logger.info(f"Datos serializados: {len(serialized_data)} elementos")
+            
+            return serialized_data
+            
+        except Exception as e:
+            logger.error(f"Error en _get_material_suggestions: {str(e)}")
+            return []

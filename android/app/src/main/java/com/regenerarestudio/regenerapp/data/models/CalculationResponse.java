@@ -139,6 +139,23 @@ public class CalculationResponse {
         return selectedSupplierId != null && selectedSupplierName != null;
     }
 
+    // Metodo para obtener material suggestions como lista de Map<String, Object>
+    public List<Map<String, Object>> getMaterialSuggestionsAsMap() {
+        List<Map<String, Object>> result = new ArrayList<>();
+        if (materialSuggestions != null) {
+            for (MaterialSuggestion suggestion : materialSuggestions) {
+                Map<String, Object> map = new HashMap<>();
+                map.put("id", suggestion.getId());
+                map.put("name", suggestion.getName());
+                map.put("code", suggestion.getCode());
+                map.put("reference_price", suggestion.getReferencePrice());
+                map.put("unit", suggestion.getUnit());
+                result.add(map);
+            }
+        }
+        return result;
+    }
+
     // Clase interna para sugerencias de materiales
     public static class MaterialSuggestion {
         private int id;
@@ -196,22 +213,18 @@ public class CalculationResponse {
         public void setUnit(String unit) {
             this.unit = unit;
         }
-    }
 
-    // Metodo para obtener material suggestions como lista de Map<String, Object>
-    public List<Map<String, Object>> getMaterialSuggestionsAsMap() {
-        List<Map<String, Object>> result = new ArrayList<>();
-        if (materialSuggestions != null) {
-            for (MaterialSuggestion suggestion : materialSuggestions) {
-                Map<String, Object> map = new HashMap<>();
-                map.put("id", suggestion.getId());
-                map.put("name", suggestion.getName());
-                map.put("code", suggestion.getCode());
-                map.put("reference_price", suggestion.getReferencePrice());
-                map.put("unit", suggestion.getUnit());
-                result.add(map);
+        // Método helper para mostrar precio formateado (MOVIDO AQUÍ)
+        public String getFormattedPrice() {
+            if (referencePrice != null) {
+                return String.format("$%.2f", referencePrice);
             }
+            return "Sin precio";
         }
-        return result;
+
+        // Método helper para verificar si tiene precio (MOVIDO AQUÍ)
+        public boolean hasPrice() {
+            return referencePrice != null && referencePrice > 0;
+        }
     }
 }
