@@ -1,35 +1,73 @@
 <resources>
     <string name="app_name">RegenerApp</string>
-    <string name="navigation_drawer_open">Open navigation drawer</string>
-    <string name="navigation_drawer_close">Close navigation drawer</string>
+    <string name="navigation_drawer_open">Abrir menú de navegación</string>
+    <string name="navigation_drawer_close">Cerrar menú de navegación</string>
+
+    <!-- Header del Navigation Drawer -->
     <string name="nav_header_title">Arq. Juan Fernando Terán</string>
     <string name="nav_header_subtitle">jfteran@regenerarestudio.com</string>
-    <string name="nav_header_desc">Navigation header</string>
-    <string name="action_settings">Settings</string>
+    <string name="nav_header_desc">Encabezado de navegación</string>
+
+    <!-- Acciones -->
+    <string name="action_settings">Configuración</string>
     <string name="action_menu">Menú</string>
 
-    <string name="menu_home">Home</string>
-    <string name="menu_gallery">Gallery</string>
-    <string name="menu_slideshow">Slideshow</string>
-
-    <!-- Bottom Navigation -->
-    <string name="title_proyectos">Proyectos</string>
+    <!-- Bottom Navigation (Solo 3 elementos ahora) -->
+    <string name="title_dashboard">Dashboard</string>
     <string name="title_calculadora">Calculadora</string>
     <string name="title_presupuestos">Presupuestos</string>
-    <string name="title_dashboard">Dashboard</string>
+    <string name="title_proyectos">Proyectos</string>
     <string name="title_proveedores">Proveedores</string>
 
     <!-- Navigation Drawer -->
+    <string name="nav_proveedores">Proveedores</string>
     <string name="nav_materiales">Base de Datos de Materiales</string>
     <string name="nav_exportacion">Exportación</string>
+    <string name="nav_cambiar_proyecto">Cambiar Proyecto</string>
     <string name="nav_configuracion">Configuración</string>
+
+    <!-- Títulos de secciones del drawer -->
+    <string name="nav_project_title">Proyecto</string>
+    <string name="nav_settings_title">Configuración</string>
     <string name="nav_support_title">Soporte</string>
     <string name="nav_ayuda">Ayuda</string>
     <string name="nav_acerca">Acerca de</string>
 
-    <!-- Mensajes -->
-    <string name="msg_seleccione_proyecto">Selecciona un proyecto primero</string>
+    <!-- Mensajes del sistema -->
+    <string name="msg_seleccione_proyecto">Debe seleccionar un proyecto para acceder a esta función</string>
     <string name="msg_cambiar_proyecto">¿Deseas cambiar de proyecto? Los cambios no guardados se perderán.</string>
     <string name="btn_cambiar">Cambiar</string>
     <string name="btn_cancelar">Cancelar</string>
+    <string name="msg_proyecto_seleccionado">Proyecto seleccionado correctamente</string>
+
+    <!-- Estados de proyectos -->
+    <string name="status_diseño">En Diseño</string>
+    <string name="status_compra">En Compra</string>
+    <string name="status_instalacion">En Instalación</string>
+    <string name="status_completado">Completado</string>
+
+    <!-- Calculadora -->
+    <string name="calc_tipo_construccion">Construcción</string>
+    <string name="calc_tipo_iluminacion">Iluminación</string>
+    <string name="calc_pintura">Pintura</string>
+    <string name="calc_gypsum">Gypsum</string>
+    <string name="calc_empaste">Empaste</string>
+    <string name="calc_perfiles">Perfiles</string>
+    <string name="calc_cintas_led">Cintas LED</string>
+    <string name="calc_cables">Cables</string>
+    <string name="btn_calcular">Calcular</string>
+    <string name="btn_añadir_presupuesto">Añadir al Presupuesto</string>
+
+    <!-- Presupuestos -->
+    <string name="presupuesto_inicial">Presupuesto Inicial</string>
+    <string name="gastos_reales">Gastos Reales</string>
+    <string name="balance_disponible">Balance Disponible</string>
+    <string name="btn_copiar_gastos">Copiar a Gastos Reales</string>
+
+    <!-- Dashboard -->
+    <string name="dashboard_resumen_proyecto">Resumen del Proyecto</string>
+    <string name="dashboard_fases">Fases del Proyecto</string>
+    <string name="dashboard_financiero">Resumen Financiero</string>
+    <string name="dashboard_google_drive">Abrir Google Drive</string>
+
 </resources>

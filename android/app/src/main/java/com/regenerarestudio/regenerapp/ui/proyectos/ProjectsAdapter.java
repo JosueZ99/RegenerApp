@@ -7,7 +7,7 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 import com.regenerarestudio.regenerapp.R;
-import com.regenerarestudio.regenerapp.model.Project;
+import com.regenerarestudio.regenerapp.data.models.Project;
 import java.util.List;
 
 public class ProjectsAdapter extends RecyclerView.Adapter<ProjectsAdapter.ProjectViewHolder> {
