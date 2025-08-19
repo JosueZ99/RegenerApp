@@ -85,6 +85,18 @@ class MaterialForCalculatorSerializer(serializers.ModelSerializer):
             # Campos específicos para cálculos
             'coverage_per_liter', 'power_per_meter', 'wire_gauge'
         ]
+    
+    def to_representation(self, instance):
+        """
+        Personalizar la representación para calculadoras
+        """
+        data = super().to_representation(instance)
+        
+        # Asegurar que todos los campos necesarios estén presentes
+        data['has_price'] = instance.reference_price is not None
+        data['price_display'] = f"${instance.reference_price:.2f}" if instance.reference_price else "Sin precio"
+        
+        return data
 
 class MaterialCreateUpdateSerializer(serializers.ModelSerializer):
     """

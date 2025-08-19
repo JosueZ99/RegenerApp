@@ -134,37 +134,122 @@ public class CalculadoraViewModel extends ViewModel {
         CalculationResponse result = new CalculationResponse();
 
         try {
+            Log.d("CalculadoraViewModel", "=== PARSEANDO RESPUESTA DEL BACKEND ===");
+
             // Campos principales
             if (responseBody.containsKey("calculation_id")) {
                 result.setCalculationId(((Number) responseBody.get("calculation_id")).intValue());
+                Log.d("CalculadoraViewModel", "Calculation ID: " + result.getCalculationId());
             }
 
             if (responseBody.containsKey("calculation_type")) {
                 result.setCalculationType((String) responseBody.get("calculation_type"));
+                Log.d("CalculadoraViewModel", "Calculation Type: " + result.getCalculationType());
             }
 
             if (responseBody.containsKey("calculated_quantity")) {
                 result.setCalculatedQuantity(((Number) responseBody.get("calculated_quantity")).doubleValue());
+                Log.d("CalculadoraViewModel", "Calculated Quantity: " + result.getCalculatedQuantity());
             }
 
             if (responseBody.containsKey("unit")) {
                 result.setUnit((String) responseBody.get("unit"));
+                Log.d("CalculadoraViewModel", "Unit: " + result.getUnit());
             }
 
             if (responseBody.containsKey("estimated_cost") && responseBody.get("estimated_cost") != null) {
                 result.setEstimatedCost(((Number) responseBody.get("estimated_cost")).doubleValue());
+                Log.d("CalculadoraViewModel", "Estimated Cost: " + result.getEstimatedCost());
             }
 
             // Detalles específicos y resultados detallados
             if (responseBody.containsKey("detailed_results")) {
                 result.setDetailedResults((Map<String, Object>) responseBody.get("detailed_results"));
+                Log.d("CalculadoraViewModel", "Detailed Results: " + result.getDetailedResults().size() + " elementos");
             }
 
             if (responseBody.containsKey("specific_details")) {
                 result.setSpecificDetails((Map<String, Object>) responseBody.get("specific_details"));
+                Log.d("CalculadoraViewModel", "Specific Details: " + result.getSpecificDetails().size() + " elementos");
+            }
+
+            // *** PARSING DE MATERIAL SUGGESTIONS - PARTE CRÍTICA ***
+            if (responseBody.containsKey("material_suggestions")) {
+                Object suggestionsObj = responseBody.get("material_suggestions");
+                Log.d("CalculadoraViewModel", "Material suggestions object: " + suggestionsObj);
+
+                if (suggestionsObj instanceof List) {
+                    List<Object> suggestionsList = (List<Object>) suggestionsObj;
+                    Log.d("CalculadoraViewModel", "Material suggestions list size: " + suggestionsList.size());
+
+                    List<CalculationResponse.MaterialSuggestion> materialSuggestions = new ArrayList<>();
+
+                    for (Object suggestionObj : suggestionsList) {
+                        if (suggestionObj instanceof Map) {
+                            Map<String, Object> suggestionMap = (Map<String, Object>) suggestionObj;
+
+                            CalculationResponse.MaterialSuggestion suggestion = new CalculationResponse.MaterialSuggestion();
+
+                            // Parsing seguro del ID (puede venir como Double o Integer)
+                            if (suggestionMap.containsKey("id")) {
+                                Object idObj = suggestionMap.get("id");
+                                if (idObj instanceof Number) {
+                                    suggestion.setId(((Number) idObj).intValue());
+                                } else if (idObj instanceof String) {
+                                    try {
+                                        suggestion.setId(Integer.parseInt((String) idObj));
+                                    } catch (NumberFormatException e) {
+                                        Log.w("CalculadoraViewModel", "No se pudo parsear ID: " + idObj);
+                                    }
+                                }
+                            }
+
+                            // Parsing de strings simples
+                            if (suggestionMap.containsKey("name")) {
+                                suggestion.setName((String) suggestionMap.get("name"));
+                            }
+
+                            if (suggestionMap.containsKey("code")) {
+                                suggestion.setCode((String) suggestionMap.get("code"));
+                            }
+
+                            if (suggestionMap.containsKey("unit")) {
+                                suggestion.setUnit((String) suggestionMap.get("unit"));
+                            }
+
+                            // Parsing seguro del precio (puede venir como String o Number)
+                            if (suggestionMap.containsKey("reference_price") && suggestionMap.get("reference_price") != null) {
+                                Object priceObj = suggestionMap.get("reference_price");
+                                try {
+                                    if (priceObj instanceof Number) {
+                                        suggestion.setReferencePrice(((Number) priceObj).doubleValue());
+                                    } else if (priceObj instanceof String) {
+                                        suggestion.setReferencePrice(Double.parseDouble((String) priceObj));
+                                    }
+                                    Log.d("CalculadoraViewModel", "Precio parseado: " + suggestion.getReferencePrice());
+                                } catch (NumberFormatException e) {
+                                    Log.w("CalculadoraViewModel", "No se pudo parsear precio: " + priceObj);
+                                }
+                            }
+
+                            materialSuggestions.add(suggestion);
+                            Log.d("CalculadoraViewModel", "Material suggestion agregada: " + suggestion.getName() + " (ID: " + suggestion.getId() + ", Precio: $" + suggestion.getReferencePrice() + ")");
+                        }
+                    }
+
+                    result.setMaterialSuggestions(materialSuggestions);
+                    Log.d("CalculadoraViewModel", "Total material suggestions parseadas: " + materialSuggestions.size());
+
+                } else {
+                    Log.w("CalculadoraViewModel", "material_suggestions no es una lista: " + suggestionsObj.getClass().getSimpleName());
+                }
+            } else {
+                Log.w("CalculadoraViewModel", "No se encontró 'material_suggestions' en la respuesta");
+                Log.d("CalculadoraViewModel", "Claves disponibles en la respuesta: " + responseBody.keySet());
             }
 
         } catch (Exception e) {
+            Log.e("CalculadoraViewModel", "Error al procesar respuesta: " + e.getMessage(), e);
             errorMessage.setValue("Error al procesar respuesta: " + e.getMessage());
         }
 
@@ -174,7 +259,7 @@ public class CalculadoraViewModel extends ViewModel {
     /**
      * Agregar cálculo al presupuesto
      */
-    public void addCalculationToBudget(int calculationId, Integer supplierId, String spaces, String notes) {
+    public void addCalculationToBudget(int calculationId, Integer supplierId, Double unitPriceOverride, String spaces, String notes) {
         isLoading.setValue(true);
 
         Map<String, Object> parameters = new HashMap<>();
@@ -182,12 +267,18 @@ public class CalculadoraViewModel extends ViewModel {
         if (supplierId != null) {
             parameters.put("supplier_id", supplierId);
         }
+        if (unitPriceOverride != null) {
+            parameters.put("unit_price_override", unitPriceOverride);
+        }
         if (spaces != null && !spaces.trim().isEmpty()) {
             parameters.put("spaces", spaces);
         }
         if (notes != null && !notes.trim().isEmpty()) {
             parameters.put("notes", notes);
         }
+
+        Log.d("CalculadoraViewModel", "=== ENVIANDO AL PRESUPUESTO ===");
+        Log.d("CalculadoraViewModel", "Parámetros enviados: " + parameters.toString());
 
         // Llamada para agregar al presupuesto (calculationId va en la URL)
         Call<Map<String, Object>> call = apiService.addCalculationToBudget(calculationId, parameters);
@@ -198,9 +289,22 @@ public class CalculadoraViewModel extends ViewModel {
                 isLoading.setValue(false);
 
                 if (response.isSuccessful()) {
+                    Log.d("CalculadoraViewModel", "Cálculo agregado al presupuesto exitosamente");
                     isAddedToBudget.setValue(true);
                 } else {
                     String error = "Error al agregar al presupuesto: " + response.code();
+
+                    // Intentar obtener el mensaje de error del servidor
+                    try {
+                        if (response.errorBody() != null) {
+                            String errorBody = response.errorBody().string();
+                            Log.e("CalculadoraViewModel", "Error del servidor: " + errorBody);
+                            error += " - " + errorBody;
+                        }
+                    } catch (Exception e) {
+                        Log.e("CalculadoraViewModel", "Error al leer respuesta de error: " + e.getMessage());
+                    }
+
                     errorMessage.setValue(error);
                 }
             }
@@ -236,31 +340,51 @@ public class CalculadoraViewModel extends ViewModel {
      * @param callback Callback para el resultado
      */
     public void loadProvidersForMaterial(Long materialId, ProvidersCallback callback) {
-        Call<List<Map<String, Object>>> call = apiService.getSupplierPrices(null, materialId);
+        Log.d("CalculadoraViewModel", "=== CARGANDO PROVEEDORES PARA MATERIAL ID: " + materialId + " ===");
 
-        call.enqueue(new Callback<List<Map<String, Object>>>() {
+        Call<PaginatedResponse<Map<String, Object>>> call = apiService.getSupplierPrices(null, materialId);
+
+        call.enqueue(new Callback<PaginatedResponse<Map<String, Object>>>() {
             @Override
-            public void onResponse(Call<List<Map<String, Object>>> call,
-                                   Response<List<Map<String, Object>>> response) {
+            public void onResponse(Call<PaginatedResponse<Map<String, Object>>> call,
+                                   Response<PaginatedResponse<Map<String, Object>>> response) {
+
+                Log.d("CalculadoraViewModel", "Respuesta de proveedores: " + response.code());
+
                 if (response.isSuccessful() && response.body() != null) {
-                    List<SupplierWithPrice> providers = parseSupplierPrices(response.body());
-                    callback.onProvidersLoaded(providers);
+                    PaginatedResponse<Map<String, Object>> paginatedResponse = response.body();
+
+                    Log.d("CalculadoraViewModel", "Total proveedores encontrados: " + paginatedResponse.getCount());
+                    Log.d("CalculadoraViewModel", "Proveedores en results: " +
+                            (paginatedResponse.getResults() != null ? paginatedResponse.getResults().size() : "null"));
+
+                    if (paginatedResponse.getResults() != null && !paginatedResponse.getResults().isEmpty()) {
+                        List<SupplierWithPrice> providers = parseSupplierPrices(paginatedResponse.getResults());
+                        Log.d("CalculadoraViewModel", "Proveedores parseados: " + providers.size());
+                        callback.onProvidersLoaded(providers);
+                    } else {
+                        Log.w("CalculadoraViewModel", "No se encontraron proveedores para el material ID: " + materialId);
+                        callback.onProvidersLoaded(new ArrayList<>()); // Lista vacía
+                    }
                 } else {
                     String error = "Error cargando proveedores: " + response.code();
                     if (response.errorBody() != null) {
                         try {
                             error += " - " + response.errorBody().string();
                         } catch (Exception e) {
-                            // Ignorar errores de parsing del error body
+                            Log.e("CalculadoraViewModel", "Error leyendo error body", e);
                         }
                     }
+                    Log.e("CalculadoraViewModel", error);
                     callback.onError(error);
                 }
             }
 
             @Override
-            public void onFailure(Call<List<Map<String, Object>>> call, Throwable t) {
-                callback.onError("Error de conexión: " + t.getMessage());
+            public void onFailure(Call<PaginatedResponse<Map<String, Object>>> call, Throwable t) {
+                String errorMsg = "Error de conexión: " + t.getMessage();
+                Log.e("CalculadoraViewModel", errorMsg, t);
+                callback.onError(errorMsg);
             }
         });
     }
@@ -302,44 +426,68 @@ public class CalculadoraViewModel extends ViewModel {
 
         for (Map<String, Object> priceData : pricesData) {
             try {
+                Log.d("CalculadoraViewModel", "Parseando proveedor: " + priceData);
+
                 SupplierWithPrice supplier = new SupplierWithPrice();
 
-                // Información del proveedor
-                Map<String, Object> supplierData = (Map<String, Object>) priceData.get("supplier");
-                if (supplierData != null) {
-                    supplier.setSupplierId(((Number) supplierData.get("id")).longValue());
-                    supplier.setSupplierName((String) supplierData.get("name"));
-                    supplier.setCommercialName((String) supplierData.get("commercial_name"));
-                    supplier.setDeliveryTime((String) supplierData.getOrDefault("delivery_time", "No especificado"));
-
-                    if (supplierData.get("rating") != null) {
-                        supplier.setRating(((Number) supplierData.get("rating")).doubleValue());
+                // Información del proveedor (formato directo, no anidado)
+                if (priceData.containsKey("supplier")) {
+                    Object supplierIdObj = priceData.get("supplier");
+                    if (supplierIdObj instanceof Number) {
+                        supplier.setSupplierId(((Number) supplierIdObj).longValue());
                     }
-
-                    if (supplierData.get("is_preferred") != null) {
-                        supplier.setPreferred((Boolean) supplierData.get("is_preferred"));
-                    }
-
-                    supplier.setLocation((String) supplierData.getOrDefault("location", ""));
-                    supplier.setPhone((String) supplierData.getOrDefault("phone", ""));
-                    supplier.setWhatsappUrl((String) supplierData.getOrDefault("whatsapp_url", ""));
                 }
 
-                // Información del precio
-                if (priceData.get("price") != null) {
-                    supplier.setPrice(((Number) priceData.get("price")).doubleValue());
+                if (priceData.containsKey("supplier_name")) {
+                    supplier.setSupplierName((String) priceData.get("supplier_name"));
+                    supplier.setCommercialName((String) priceData.get("supplier_name")); // Usar mismo nombre
                 }
 
+                // Tiempo de entrega por defecto (se puede mejorar después)
+                supplier.setDeliveryTime("2-3 días");
+                supplier.setRating(4.0); // Rating por defecto
+                supplier.setPreferred(false);
+                supplier.setLocation("Quito, Ecuador");
+                supplier.setPhone("");
+                supplier.setWhatsappUrl("");
+
+                // Información del precio (conversión segura)
+                if (priceData.containsKey("price")) {
+                    Object priceObj = priceData.get("price");
+                    try {
+                        if (priceObj instanceof String) {
+                            supplier.setPrice(Double.parseDouble((String) priceObj));
+                        } else if (priceObj instanceof Number) {
+                            supplier.setPrice(((Number) priceObj).doubleValue());
+                        }
+                    } catch (NumberFormatException e) {
+                        Log.w("CalculadoraViewModel", "Error parseando precio: " + priceObj);
+                        supplier.setPrice(0.0);
+                    }
+                }
+
+                // Moneda
                 supplier.setCurrency((String) priceData.getOrDefault("currency", "USD"));
 
-                if (priceData.get("discount_percentage") != null) {
-                    supplier.setDiscountPercentage(((Number) priceData.get("discount_percentage")).doubleValue());
+                // Descuento
+                if (priceData.containsKey("discount_percentage")) {
+                    Object discountObj = priceData.get("discount_percentage");
+                    try {
+                        if (discountObj instanceof String) {
+                            supplier.setDiscountPercentage(Double.parseDouble((String) discountObj));
+                        } else if (discountObj instanceof Number) {
+                            supplier.setDiscountPercentage(((Number) discountObj).doubleValue());
+                        }
+                    } catch (NumberFormatException e) {
+                        Log.w("CalculadoraViewModel", "Error parseando descuento: " + discountObj);
+                        supplier.setDiscountPercentage(0.0);
+                    }
                 }
 
                 suppliers.add(supplier);
+                Log.d("CalculadoraViewModel", "Proveedor parseado: " + supplier.getSupplierName() + " - $" + supplier.getPrice());
 
             } catch (Exception e) {
-                // Log error but continue processing other suppliers
                 Log.e("CalculadoraViewModel", "Error parsing supplier price data", e);
             }
         }
@@ -347,6 +495,7 @@ public class CalculadoraViewModel extends ViewModel {
         // Ordenar por precio (menor a mayor)
         suppliers.sort((s1, s2) -> Double.compare(s1.getFinalPrice(), s2.getFinalPrice()));
 
+        Log.d("CalculadoraViewModel", "Total proveedores parseados exitosamente: " + suppliers.size());
         return suppliers;
     }
 
@@ -363,8 +512,8 @@ public class CalculadoraViewModel extends ViewModel {
             supplierWithPrice.setCommercialName(supplier.getCommercialName());
             supplierWithPrice.setDeliveryTime(supplier.getDeliveryTime());
             supplierWithPrice.setRating(supplier.getRating());
-            supplierWithPrice.setPreferred(supplier.isPreferred());
-            supplierWithPrice.setLocation(supplier.getLocation());
+            supplierWithPrice.setPreferred(supplier.getIsPreferred());
+            supplierWithPrice.setLocation(supplier.getCity());
             supplierWithPrice.setPhone(supplier.getPhone());
             supplierWithPrice.setWhatsappUrl(supplier.getWhatsappUrl());
 

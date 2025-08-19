@@ -169,8 +169,8 @@ class CableCalculationRequestSerializer(serializers.Serializer):
 class AddCalculationToBudgetSerializer(serializers.Serializer):
     """
     Serializer para agregar cálculo al presupuesto
+    El calculation_id viene en la URL, no en el body
     """
-    calculation_id = serializers.IntegerField()
     supplier_id = serializers.IntegerField(required=False)
     unit_price_override = serializers.DecimalField(
         max_digits=10, decimal_places=2, required=False
@@ -178,14 +178,14 @@ class AddCalculationToBudgetSerializer(serializers.Serializer):
     spaces = serializers.CharField(max_length=200, required=False)
     notes = serializers.CharField(max_length=500, required=False)
     
-    def validate_calculation_id(self, value):
-        """Validar que el cálculo existe y no está agregado"""
-        try:
-            calc = Calculation.objects.get(id=value)
-            if calc.added_to_budget:
-                raise serializers.ValidationError("Este cálculo ya fue agregado al presupuesto")
-        except Calculation.DoesNotExist:
-            raise serializers.ValidationError("El cálculo no existe")
+    def validate_supplier_id(self, value):
+        """Validar que el proveedor existe si se proporciona"""
+        if value:
+            from apps.suppliers.models import Supplier
+            try:
+                Supplier.objects.get(id=value)
+            except Supplier.DoesNotExist:
+                raise serializers.ValidationError("El proveedor no existe")
         return value
     
     def validate_supplier_id(self, value):
