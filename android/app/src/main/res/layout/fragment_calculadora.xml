@@ -342,6 +342,11 @@
 
         </com.google.android.material.card.MaterialCardView>
 
+        <!-- Espacio adicional para evitar que el bottom nav oculte el contenido -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="50dp" />
+
     </LinearLayout>
 
 </androidx.core.widget.NestedScrollView>

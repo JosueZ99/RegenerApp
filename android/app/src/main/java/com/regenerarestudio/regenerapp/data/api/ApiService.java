@@ -281,6 +281,16 @@ public interface ApiService {
             @Query("calculation_type") String calculationType
     );
 
+    /**
+     * Agregar cálculo al presupuesto inicial
+     * POST /api/calculations/calculations/{id}/add_to_budget/
+     */
+    @POST("calculations/calculations/{id}/add_to_budget/")
+    Call<Map<String, Object>> addCalculationToBudget(
+            @Path("id") int calculationId,
+            @Body Map<String, Object> parameters
+    );
+
     // ==========================================
     // UTILIDADES GENERALES
     // ==========================================

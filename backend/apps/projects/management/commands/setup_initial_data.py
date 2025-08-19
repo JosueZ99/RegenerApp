@@ -171,6 +171,31 @@ class Command(BaseCommand):
                     'cable_type': {'type': 'choice', 'label': 'Tipo', 'choices': ['THHN', 'Flexible']},
                     'installation_type': {'type': 'choice', 'label': 'Instalación', 'choices': ['Conduit', 'Directo']}
                 }
+            },
+                        {
+                'name': 'Calculadora de Empaste',
+                'code': 'empaste',
+                'category': 'construction',
+                'description': 'Calcula cantidad de empaste necesario para superficie',
+                'input_parameters': {
+                    'area_to_cover': {'type': 'decimal', 'label': 'Área a empastar (m²)', 'required': True},
+                    'empaste_type': {'type': 'choice', 'label': 'Tipo de empaste', 'choices': ['Interior', 'Exterior', 'Sellador']},
+                    'number_of_coats': {'type': 'integer', 'label': 'Número de capas', 'default': 1},
+                    'coverage_per_kg': {'type': 'decimal', 'label': 'Rendimiento (m²/kg)', 'default': 4.0}
+                }
+            },
+            {
+                'name': 'Calculadora de Perfiles',
+                'code': 'profiles',
+                'category': 'lighting',
+                'description': 'Calcula perfiles de aluminio para iluminación LED',
+                'input_parameters': {
+                    'total_length': {'type': 'decimal', 'label': 'Longitud total (m)', 'required': True},
+                    'profile_type': {'type': 'choice', 'label': 'Tipo de perfil', 'choices': ['Superficie', 'Empotrado', 'Suspendido', 'Esquina']},
+                    'profile_size': {'type': 'choice', 'label': 'Tamaño', 'choices': ['16mm', '20mm', '25mm', '30mm']},
+                    'finish_type': {'type': 'choice', 'label': 'Acabado', 'choices': ['Anodizado', 'Blanco', 'Negro', 'Plateado']},
+                    'accessories_needed': {'type': 'choice', 'label': 'Accesorios', 'choices': ['Básicos', 'Completos'], 'default': 'Básicos'}
+                }
             }
         ]
         

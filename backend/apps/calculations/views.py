@@ -421,6 +421,156 @@ class CalculationViewSet(viewsets.ModelViewSet):
             'material_suggestions': self._get_material_suggestions('electrical', 'cable')
         })
     
+    @action(detail=False, methods=['post'])
+    def calculate_empaste(self, request):
+        """
+        Calculadora de empaste
+        POST /api/calculations/calculate_empaste/
+        """
+        # Datos básicos requeridos
+        data = request.data
+        area = Decimal(str(data['area_to_cover']))
+        empaste_type = data['empaste_type']
+        number_of_coats = int(data.get('number_of_coats', 1))
+        coverage_per_kg = Decimal(str(data.get('coverage_per_kg', '4.0')))
+        
+        # Cálculos de empaste
+        # Factor de desperdicio del 15% para empaste
+        waste_factor = Decimal('0.15')
+        
+        # Kilogramos base necesarios
+        kg_base = (area * number_of_coats) / coverage_per_kg
+        kg_with_waste = kg_base * (1 + waste_factor)
+        
+        # Sacos necesarios (asumiendo 20kg por saco)
+        kg_per_sack = Decimal('20.0')
+        sacks_needed = math.ceil(kg_with_waste / kg_per_sack)
+        
+        # Buscar material sugerido
+        material = None
+        estimated_cost = None
+        
+        if data.get('material_id'):
+            try:
+                material = Material.objects.get(id=data['material_id'])
+                if material.reference_price:
+                    estimated_cost = sacks_needed * material.reference_price
+            except Material.DoesNotExist:
+                pass
+        
+        # Crear registro de cálculo
+        calculation_type = CalculationType.objects.get(code='empaste')
+        
+        calculation = Calculation.objects.create(
+            project_id=data['project_id'],
+            calculation_type=calculation_type,
+            material=material,
+            input_data=dict(data),
+            calculated_quantity=kg_with_waste,
+            unit='kilogramos',
+            estimated_cost=estimated_cost,
+            detailed_results={
+                'area_to_cover': float(area),
+                'kg_base': float(kg_base),
+                'waste_factor_applied': float(waste_factor),
+                'sacks_needed': sacks_needed,
+                'kg_per_sack': float(kg_per_sack)
+            }
+        )
+        
+        return Response({
+            'calculation_id': calculation.id,
+            'calculation_type': 'empaste',
+            'calculated_quantity': float(kg_with_waste),
+            'unit': 'kilogramos',
+            'estimated_cost': float(estimated_cost) if estimated_cost else None,
+            'detailed_results': calculation.detailed_results,
+            'specific_details': {
+                'area_to_cover': float(area),
+                'empaste_type': empaste_type,
+                'number_of_coats': number_of_coats,
+                'coverage_per_kg': float(coverage_per_kg),
+                'sacks_needed': sacks_needed
+            },
+            'material_suggestions': self._get_material_suggestions('construction', 'empaste')
+        })
+
+    @action(detail=False, methods=['post'])
+    def calculate_profiles(self, request):
+        """
+        Calculadora de perfiles de aluminio
+        POST /api/calculations/calculate_profiles/
+        """
+        data = request.data
+        total_length = Decimal(str(data['total_length']))
+        profile_type = data['profile_type']
+        profile_size = data['profile_size']
+        finish_type = data['finish_type']
+        accessories_needed = data.get('accessories_needed', 'Básicos')
+        
+        # Longitud estándar de perfil (2 metros)
+        standard_length = Decimal('2.0')
+        
+        # Factor de desperdicio del 10%
+        waste_factor = Decimal('0.10')
+        length_with_waste = total_length * (1 + waste_factor)
+        
+        # Perfiles necesarios
+        profiles_needed = math.ceil(length_with_waste / standard_length)
+        
+        # Accesorios según el tipo
+        accessories_count = profiles_needed if accessories_needed == 'Completos' else math.ceil(profiles_needed / 2)
+        
+        # Buscar material sugerido
+        material = None
+        estimated_cost = None
+        
+        if data.get('material_id'):
+            try:
+                material = Material.objects.get(id=data['material_id'])
+                if material.reference_price:
+                    estimated_cost = profiles_needed * material.reference_price
+            except Material.DoesNotExist:
+                pass
+        
+        # Crear registro de cálculo
+        calculation_type = CalculationType.objects.get(code='profiles')
+        
+        calculation = Calculation.objects.create(
+            project_id=data['project_id'],
+            calculation_type=calculation_type,
+            material=material,
+            input_data=dict(data),
+            calculated_quantity=length_with_waste,
+            unit='metros',
+            estimated_cost=estimated_cost,
+            detailed_results={
+                'base_length': float(total_length),
+                'waste_factor_applied': float(waste_factor),
+                'profiles_needed': profiles_needed,
+                'standard_length': float(standard_length),
+                'accessories_count': accessories_count
+            }
+        )
+        
+        return Response({
+            'calculation_id': calculation.id,
+            'calculation_type': 'profiles',
+            'calculated_quantity': float(length_with_waste),
+            'unit': 'metros',
+            'estimated_cost': float(estimated_cost) if estimated_cost else None,
+            'detailed_results': calculation.detailed_results,
+            'specific_details': {
+                'total_length': float(length_with_waste),
+                'profile_type': profile_type,
+                'profile_size': profile_size,
+                'finish_type': finish_type,
+                'profiles_needed': profiles_needed,
+                'accessories_count': accessories_count
+            },
+            'material_suggestions': self._get_material_suggestions('lighting', 'perfil')
+        })
+    
     @action(detail=True, methods=['post'])
     def add_to_budget(self, request, pk=None):
         """
