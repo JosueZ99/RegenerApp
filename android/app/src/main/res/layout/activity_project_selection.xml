@@ -3,6 +3,7 @@
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
+    android:fitsSystemWindows="true"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/background_main"
@@ -89,7 +90,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Filtros Rápidos"
+                android:text="Filtros por Fases"
                 android:textSize="16sp"
                 android:textStyle="bold"
                 android:textColor="@color/gray_800"
@@ -100,7 +101,9 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="24dp"
-                app:chipSpacingHorizontal="8dp">
+                app:chipSpacingHorizontal="8dp"
+                app:singleSelection="true"
+                app:checkedChip="@id/chip_all">
 
                 <com.google.android.material.chip.Chip
                     android:id="@+id/chip_all"
@@ -114,21 +117,21 @@
                     android:id="@+id/chip_design"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="En Diseño"
+                    android:text="Diseño"
                     style="@style/Widget.MaterialComponents.Chip.Filter" />
 
                 <com.google.android.material.chip.Chip
                     android:id="@+id/chip_purchase"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="En Compra"
+                    android:text="Compra"
                     style="@style/Widget.MaterialComponents.Chip.Filter" />
 
                 <com.google.android.material.chip.Chip
                     android:id="@+id/chip_installation"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="En Instalación"
+                    android:text="Instalación"
                     style="@style/Widget.MaterialComponents.Chip.Filter" />
 
             </com.google.android.material.chip.ChipGroup>

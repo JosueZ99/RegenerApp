@@ -57,20 +57,38 @@ class ProjectViewSet(viewsets.ModelViewSet):
         Endpoint para seleccionar un proyecto (sistema de "login")
         POST /api/projects/{id}/select_project/
         """
-        project = self.get_object()
-        
-        # Deseleccionar todos los proyectos
-        Project.objects.update(is_selected=False)
-        
-        # Seleccionar el proyecto actual
-        project.is_selected = True
-        project.save()
-        
-        serializer = ProjectDetailSerializer(project)
-        return Response({
-            'message': f'Proyecto "{project.name}" seleccionado correctamente',
-            'project': serializer.data
-        })
+        try:
+            project = self.get_object()
+            
+            # Deseleccionar todos los proyectos
+            Project.objects.update(is_selected=False)
+            
+            # Seleccionar el proyecto actual
+            project.is_selected = True
+            project.save()
+            
+            serializer = ProjectDetailSerializer(project)
+            
+            # Respuesta con formato correcto que espera el frontend
+            return Response({
+                'success': True,  # ← CAMPO AGREGADO
+                'message': f'Proyecto "{project.name}" seleccionado correctamente',
+                'project': serializer.data
+            }, status=status.HTTP_200_OK)
+            
+        except Project.DoesNotExist:
+            return Response({
+                'success': False,  # ← CAMPO AGREGADO
+                'message': 'Proyecto no encontrado',
+                'project': None
+            }, status=status.HTTP_404_NOT_FOUND)
+            
+        except Exception as e:
+            return Response({
+                'success': False,  # ← CAMPO AGREGADO
+                'message': f'Error al seleccionar proyecto: {str(e)}',
+                'project': None
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
     @action(detail=False, methods=['get'])
     def selected(self, request):

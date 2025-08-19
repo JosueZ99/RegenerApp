@@ -52,6 +52,7 @@ public class ProjectSelectionActivity extends AppCompatActivity {
         setupProgressIndicator();
         setupRecyclerView();
         setupViewModel();
+        setupPhaseFilters();
         observeViewModel();
 
         // Cargar proyectos desde API
@@ -84,6 +85,29 @@ public class ProjectSelectionActivity extends AppCompatActivity {
 
     private void setupViewModel() {
         proyectosViewModel = new ViewModelProvider(this).get(ProyectosViewModel.class);
+    }
+
+    private void setupPhaseFilters() {
+        binding.chipGroupFilters.setOnCheckedStateChangeListener((group, checkedIds) -> {
+            String phaseFilter = ""; // Por defecto mostrar todos
+
+            if (!checkedIds.isEmpty()) {
+                int selectedChipId = checkedIds.get(0);
+
+                // Determinar el filtro según el chip seleccionado
+                if (selectedChipId == R.id.chip_design) {
+                    phaseFilter = "design";
+                } else if (selectedChipId == R.id.chip_purchase) {
+                    phaseFilter = "purchase";
+                } else if (selectedChipId == R.id.chip_installation) {
+                    phaseFilter = "installation";
+                }
+                // Si es chip_all o cualquier otro, phaseFilter se queda vacío (todos)
+            }
+
+            // Aplicar filtro al ViewModel
+            proyectosViewModel.applyFilters(currentSearchQuery, "", phaseFilter);
+        });
     }
 
     private void observeViewModel() {
@@ -125,9 +149,6 @@ public class ProjectSelectionActivity extends AppCompatActivity {
 
             case SUCCESS:
                 hideLoading();
-                if (networkState.getMessage() != null && !networkState.getMessage().isEmpty()) {
-                    Toast.makeText(this, networkState.getMessage(), Toast.LENGTH_SHORT).show();
-                }
                 break;
 
             case ERROR:
@@ -184,11 +205,6 @@ public class ProjectSelectionActivity extends AppCompatActivity {
             Toast.makeText(this, "Error: Proyecto no válido", Toast.LENGTH_SHORT).show();
             return;
         }
-
-        // Mostrar confirmación
-        Toast.makeText(this,
-                "Seleccionando proyecto: " + project.getName(),
-                Toast.LENGTH_SHORT).show();
 
         // Usar el ViewModel para seleccionar el proyecto (incluye llamada a API)
         proyectosViewModel.selectProject(project);

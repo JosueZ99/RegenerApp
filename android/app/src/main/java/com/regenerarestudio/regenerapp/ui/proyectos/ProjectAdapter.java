@@ -103,27 +103,47 @@ public class ProjectAdapter extends RecyclerView.Adapter<ProjectAdapter.ProjectV
         }
 
         private void configureStatusChip(Project project) {
-            chipStatus.setText(project.getStatusDisplayName());
-            chipStatus.setChipBackgroundColorResource(project.getStatusColor());
+            // ✅ USAR getCurrentPhase() en lugar de getStatus()
+            String phase = project.getCurrentPhase();
+            String displayPhase = project.getDisplayPhase();
 
-            // Configurar color del texto según el estado
-            switch (project.getStatus().toLowerCase()) {
-                case "diseño":
+            if (phase == null || phase.isEmpty()) {
+                chipStatus.setText("📋 Sin Definir");
+                chipStatus.setChipBackgroundColorResource(R.color.gray_500);
+                chipStatus.setTextColor(itemView.getContext().getColor(R.color.white));
+                return;
+            }
+
+            // Configurar texto y color según la FASE (no el status)
+            switch (phase.toLowerCase()) {
                 case "design":
-                case "compra":
-                case "purchase":
-                case "instalacion":
-                case "installation":
-                case "completado":
-                case "completed":
-                    chipStatus.setTextColor(itemView.getContext().getColor(R.color.white));
+                    chipStatus.setText("🎨 " + displayPhase);  // "🎨 Diseño"
+                    chipStatus.setChipBackgroundColorResource(R.color.status_design);
                     break;
-                case "pausado":
-                case "paused":
+
+                case "purchase":
+                    chipStatus.setText("🛒 " + displayPhase);  // "🛒 Compra"
+                    chipStatus.setChipBackgroundColorResource(R.color.status_purchase);
+                    break;
+
+                case "installation":
+                    chipStatus.setText("🔧 " + displayPhase);  // "🔧 Instalación"
+                    chipStatus.setChipBackgroundColorResource(R.color.status_installation);
+                    break;
+
+                case "completed":
+                    chipStatus.setText("✅ " + displayPhase);  // "✅ Completado"
+                    chipStatus.setChipBackgroundColorResource(R.color.status_completed);
+                    break;
+
                 default:
-                    chipStatus.setTextColor(itemView.getContext().getColor(R.color.white));
+                    chipStatus.setText("📋 " + displayPhase);
+                    chipStatus.setChipBackgroundColorResource(R.color.gray_500);
                     break;
             }
+
+            // Color del texto siempre blanco para mejor legibilidad
+            chipStatus.setTextColor(itemView.getContext().getColor(R.color.white));
         }
     }
 }

@@ -47,7 +47,7 @@ public class ProyectosViewModel extends AndroidViewModel {
     // Filtros actuales
     private String currentSearchFilter = "";
     private String currentTypeFilter = "";
-    private String currentStatusFilter = "";
+    private String currentPhaseFilter = "";
 
     public ProyectosViewModel(@NonNull Application application) {
         super(application);
@@ -228,7 +228,7 @@ public class ProyectosViewModel extends AndroidViewModel {
                     if (selectionResponse.isSuccessful()) {
                         // Actualizar proyecto seleccionado localmente
                         selectProjectLocally(project);
-                        networkState.setSuccess("Proyecto seleccionado: " + project.getName());
+                        networkState.setSuccess();
                         Log.d(TAG, "Proyecto seleccionado correctamente: " + project.getName());
                     } else {
                         networkState.setError("Error al seleccionar proyecto: " + selectionResponse.getMessage());
@@ -274,10 +274,10 @@ public class ProyectosViewModel extends AndroidViewModel {
     /**
      * Aplicar filtros de búsqueda
      */
-    public void applyFilters(String search, String type, String status) {
+    public void applyFilters(String search, String type, String phase) {
         currentSearchFilter = search != null ? search.toLowerCase() : "";
         currentTypeFilter = type != null ? type : "";
-        currentStatusFilter = status != null ? status : "";
+        currentPhaseFilter = phase != null ? phase : "";
 
         applyCurrentFilters();
     }
@@ -297,16 +297,16 @@ public class ProyectosViewModel extends AndroidViewModel {
             boolean matchesType = currentTypeFilter.isEmpty() ||
                     currentTypeFilter.equals(project.getProjectType());
 
-            boolean matchesStatus = currentStatusFilter.isEmpty() ||
-                    currentStatusFilter.equals(project.getStatus());
+            boolean matchesPhase = currentPhaseFilter.isEmpty() ||
+                    currentPhaseFilter.equals(project.getCurrentPhase());
 
-            if (matchesSearch && matchesType && matchesStatus) {
+            if (matchesSearch && matchesType && matchesPhase) {
                 filteredProjects.add(project);
             }
         }
 
         projectsLiveData.setValue(new ArrayList<>(filteredProjects));
-        Log.d(TAG, "Filtros aplicados. Proyectos mostrados: " + filteredProjects.size());
+        Log.d(TAG, "Filtros aplicados. Proyectos mostrados: " + filteredProjects.size() + "/" + allProjects.size());
     }
 
     /**
