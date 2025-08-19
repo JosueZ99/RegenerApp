@@ -183,24 +183,24 @@ public interface ApiService {
     );
 
 // ==========================================
-// PRESUPUESTOS - Budgets APIs - URLS CORREGIDAS COMPLETAS
+// PRESUPUESTOS - Budgets APIs - URLS CORREGIDAS CON PAGINATEDRESPONSE
 // ==========================================
 
     /**
-     * Obtener presupuesto inicial de un proyecto
+     * Obtener presupuesto inicial de un proyecto - CORREGIDO PARA USAR PAGINATEDRESPONSE
      * GET /api/budgets/budget-items/?project={projectId}
      */
     @GET("budgets/budget-items/")
-    Call<List<Map<String, Object>>> getInitialBudget(
+    Call<PaginatedResponse<Map<String, Object>>> getInitialBudget(
             @Query("project") Long projectId
     );
 
     /**
-     * Obtener gastos reales de un proyecto
+     * Obtener gastos reales de un proyecto - CORREGIDO PARA USAR PAGINATEDRESPONSE
      * GET /api/budgets/real-expenses/?project={projectId}
      */
     @GET("budgets/real-expenses/")
-    Call<List<Map<String, Object>>> getExpenses(
+    Call<PaginatedResponse<Map<String, Object>>> getExpenses(
             @Query("project") Long projectId
     );
 

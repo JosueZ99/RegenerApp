@@ -5,13 +5,15 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Toast;
+import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
+import com.regenerarestudio.regenerapp.R;
 import com.regenerarestudio.regenerapp.databinding.FragmentTableBudgetInitialBinding;
 
 import java.text.NumberFormat;
@@ -21,8 +23,8 @@ import java.util.Locale;
 import java.util.Map;
 
 /**
- * Fragment para la tabla de Presupuesto Inicial
- * Actualizado para usar datos reales del backend Django - IDs CORREGIDOS
+ * Fragment para mostrar la tabla de Presupuesto Inicial
+ * VERSIÓN CORREGIDA - Actualiza UI correctamente
  */
 public class BudgetInitialTableFragment extends Fragment {
 
@@ -31,7 +33,12 @@ public class BudgetInitialTableFragment extends Fragment {
     private FragmentTableBudgetInitialBinding binding;
     private BudgetInitialAdapter adapter;
     private List<BudgetItem> budgetItems;
-    private NumberFormat currencyFormat;
+
+    // Estados de UI
+    private RecyclerView recyclerView;
+
+    // Formatters
+    private final NumberFormat currencyFormat = NumberFormat.getCurrencyInstance(new Locale("es", "EC"));
 
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -45,332 +52,276 @@ public class BudgetInitialTableFragment extends Fragment {
 
         Log.d(TAG, "onViewCreated - Inicializando BudgetInitialTableFragment");
 
-        // Inicializar formatters
-        currencyFormat = NumberFormat.getCurrencyInstance(new Locale("es", "EC"));
-
+        initializeViews();
         setupRecyclerView();
-        setupSearchAndFilter();
-
-        // Mostrar estado inicial (sin datos)
         showEmptyState();
     }
 
-    private void setupRecyclerView() {
+    private void initializeViews() {
+        recyclerView = binding.rvBudgetInitial;
         budgetItems = new ArrayList<>();
-        adapter = new BudgetInitialAdapter(budgetItems, this::onItemClick, this::onItemMenuClick);
 
-        binding.rvBudgetInitial.setLayoutManager(new LinearLayoutManager(requireContext()));
-        binding.rvBudgetInitial.setAdapter(adapter);
-
-        Log.d(TAG, "RecyclerView configurado");
+        Log.d(TAG, "Vistas inicializadas");
     }
 
-    private void setupSearchAndFilter() {
-        // Configurar búsqueda
-        binding.etSearchInitial.setOnFocusChangeListener((v, hasFocus) -> {
-            if (hasFocus) {
-                // TODO: Implementar lógica de búsqueda en tiempo real
-                Log.d(TAG, "Búsqueda activada - TODO: implementar");
-            }
-        });
+    private void setupRecyclerView() {
+        Log.d(TAG, "RecyclerView configurado");
 
-        // Configurar filtro
-        binding.btnFilterInitial.setOnClickListener(v -> {
-            // TODO: Mostrar dialog de filtros
-            Toast.makeText(requireContext(), "Filtros - Próximamente", Toast.LENGTH_SHORT).show();
-            Log.d(TAG, "Filtros solicitados - TODO: implementar");
-        });
+        // Configurar LayoutManager
+        recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
+
+        // Crear y configurar adapter
+        adapter = new BudgetInitialAdapter(budgetItems);
+        recyclerView.setAdapter(adapter);
+
+        Log.d(TAG, "Adapter configurado con " + budgetItems.size() + " items");
     }
 
     /**
      * Mostrar estado vacío cuando no hay datos
-     * CORREGIDO: Usar IDs correctos del layout XML
      */
     private void showEmptyState() {
         Log.d(TAG, "Mostrando estado vacío");
-        // IDs CORREGIDOS según fragment_table_budget_initial.xml
-        binding.tvTotalItemsInitial.setText("0 items");
-        binding.tvTotalBudgetInitial.setText(currencyFormat.format(0.0));
+
+        if (recyclerView != null) {
+            recyclerView.setVisibility(View.VISIBLE); // Mantener visible pero sin datos
+        }
     }
 
     /**
-     * Método público llamado por PresupuestosFragment para actualizar datos
-     * Convierte datos del backend (Map) a objetos BudgetItem locales
+     * Mostrar contenido cuando hay datos
      */
-    public void updateBudgetData(List<Map<String, Object>> backendData) {
-        Log.d(TAG, "updateBudgetData - Recibidos " +
-                (backendData != null ? backendData.size() : 0) + " items del backend");
+    private void showContent() {
+        Log.d(TAG, "Mostrando contenido con datos");
 
-        if (backendData == null || backendData.isEmpty()) {
-            // Sin datos del backend
-            budgetItems.clear();
-            adapter.notifyDataSetChanged();
+        if (recyclerView != null) {
+            recyclerView.setVisibility(View.VISIBLE);
+        }
+    }
+
+    /**
+     * MÉTODO PRINCIPAL - Actualizar datos del presupuesto desde el ViewModel
+     * Este método es llamado por PresupuestosFragment cuando llegan datos del backend
+     */
+    public void updateBudgetData(List<Map<String, Object>> budgetData) {
+        if (budgetData == null) {
+            Log.w(TAG, "updateBudgetData - Datos recibidos son null");
             showEmptyState();
             return;
         }
 
-        try {
-            // Convertir datos del backend a objetos locales
-            List<BudgetItem> newBudgetItems = convertBackendDataToBudgetItems(backendData);
+        Log.d(TAG, "updateBudgetData - Recibidos " + budgetData.size() + " items del backend");
 
-            // Actualizar lista y adapter
-            budgetItems.clear();
-            budgetItems.addAll(newBudgetItems);
-            adapter.notifyDataSetChanged();
+        // Limpiar lista actual
+        budgetItems.clear();
 
-            // Actualizar totales
-            updateTotals();
-
-            Log.d(TAG, "Datos actualizados exitosamente - " + budgetItems.size() + " items");
-
-        } catch (Exception e) {
-            Log.e(TAG, "Error al procesar datos del backend", e);
-            showError("Error al procesar datos del presupuesto inicial");
-        }
-    }
-
-    /**
-     * Convertir datos del backend (Django JSON) a objetos BudgetItem
-     */
-    private List<BudgetItem> convertBackendDataToBudgetItems(List<Map<String, Object>> backendData) {
-        List<BudgetItem> items = new ArrayList<>();
-
-        for (Map<String, Object> itemData : backendData) {
-            try {
-                BudgetItem budgetItem = createBudgetItemFromBackendData(itemData);
-                if (budgetItem != null) {
-                    items.add(budgetItem);
-                }
-            } catch (Exception e) {
-                Log.w(TAG, "Error al procesar item individual: " + itemData, e);
-                // Continuar con los demás items
-            }
-        }
-
-        Log.d(TAG, "Convertidos " + items.size() + " items exitosamente");
-        return items;
-    }
-
-    /**
-     * Crear un BudgetItem desde datos del backend
-     */
-    private BudgetItem createBudgetItemFromBackendData(Map<String, Object> itemData) {
-        try {
-            // Extraer datos del Map (campo por campo del modelo Django)
-            Long id = parseLongFromObject(itemData.get("id"));
-            String description = parseStringFromObject(itemData.get("description"));
-            String category = parseStringFromObject(itemData.get("category"));
-            Double quantity = parseDoubleFromObject(itemData.get("quantity"));
-            String unit = parseStringFromObject(itemData.get("unit"));
-            Double unitPrice = parseDoubleFromObject(itemData.get("unit_price"));
-
-            // Datos del proveedor (pueden venir en un objeto anidado)
-            String supplierName = "Sin proveedor";
-            Double supplierRating = 0.0;
-
-            Object supplierData = itemData.get("supplier");
-            if (supplierData instanceof Map) {
-                @SuppressWarnings("unchecked")
-                Map<String, Object> supplier = (Map<String, Object>) supplierData;
-                supplierName = parseStringFromObject(supplier.get("name"));
-                supplierRating = parseDoubleFromObject(supplier.get("rating"));
-            } else if (supplierData instanceof String) {
-                supplierName = (String) supplierData;
-            }
-
-            // Crear el objeto BudgetItem
-            BudgetItem budgetItem = new BudgetItem(
-                    id != null ? id : 0L,
-                    description != null ? description : "Sin descripción",
-                    category != null ? category : "Sin categoría",
-                    quantity != null ? quantity : 0.0,
-                    unit != null ? unit : "Unidad",
-                    unitPrice != null ? unitPrice : 0.0,
-                    supplierName,
-                    supplierRating != null ? supplierRating : 0.0
-            );
-
-            Log.v(TAG, "Item creado: " + budgetItem.getMaterialName() + " - " +
-                    currencyFormat.format(budgetItem.getTotalPrice()));
-
-            return budgetItem;
-
-        } catch (Exception e) {
-            Log.e(TAG, "Error al crear BudgetItem desde datos del backend: " + itemData, e);
-            return null;
-        }
-    }
-
-    // ==========================================
-    // MÉTODOS DE CONVERSIÓN SEGUROS
-    // ==========================================
-
-    private Long parseLongFromObject(Object obj) {
-        if (obj == null) return null;
-        if (obj instanceof Number) return ((Number) obj).longValue();
-        if (obj instanceof String) {
-            try {
-                return Long.parseLong((String) obj);
-            } catch (NumberFormatException e) {
-                Log.w(TAG, "Error al convertir string a long: " + obj);
-                return null;
-            }
-        }
-        return null;
-    }
-
-    private Double parseDoubleFromObject(Object obj) {
-        if (obj == null) return null;
-        if (obj instanceof Number) return ((Number) obj).doubleValue();
-        if (obj instanceof String) {
-            try {
-                return Double.parseDouble((String) obj);
-            } catch (NumberFormatException e) {
-                Log.w(TAG, "Error al convertir string a double: " + obj);
-                return null;
-            }
-        }
-        return null;
-    }
-
-    private String parseStringFromObject(Object obj) {
-        if (obj == null) return null;
-        return obj.toString();
-    }
-
-    /**
-     * Actualizar totales mostrados en la UI
-     * CORREGIDO: Usar IDs correctos del layout XML
-     */
-    private void updateTotals() {
-        int totalItems = budgetItems.size();
+        // Procesar datos del backend
         double totalAmount = 0.0;
+        for (Map<String, Object> itemData : budgetData) {
+            try {
+                BudgetItem item = createBudgetItemFromMap(itemData);
+                budgetItems.add(item);
+                totalAmount += item.getTotalPrice();
 
-        for (BudgetItem item : budgetItems) {
-            totalAmount += item.getTotalPrice();
+                Log.v(TAG, "Item creado: " + item.getDescription() + " - " +
+                        currencyFormat.format(item.getTotalPrice()));
+
+            } catch (Exception e) {
+                Log.e(TAG, "Error procesando item del presupuesto: " + e.getMessage(), e);
+            }
         }
 
-        // Actualizar UI - IDs CORREGIDOS según fragment_table_budget_initial.xml
-        binding.tvTotalItemsInitial.setText(totalItems + " items");
-        binding.tvTotalBudgetInitial.setText(currencyFormat.format(totalAmount));
+        Log.d(TAG, "Convertidos " + budgetItems.size() + " items exitosamente");
 
-        Log.d(TAG, String.format("Totales actualizados - Items: %d, Monto: %.2f",
-                totalItems, totalAmount));
+        // Hacer la variable final para usar en lambda
+        final double finalTotalAmount = totalAmount;
+
+        // Actualizar UI en el hilo principal
+        if (getActivity() != null) {
+            getActivity().runOnUiThread(() -> {
+                updateUI(finalTotalAmount);
+            });
+        }
     }
 
     /**
-     * Mostrar error en la UI
+     * Actualizar la interfaz de usuario
      */
-    private void showError(String message) {
-        if (isAdded() && getContext() != null) {
-            Toast.makeText(getContext(), message, Toast.LENGTH_LONG).show();
+    private void updateUI(double totalAmount) {
+        // Notificar al adapter que los datos han cambiado
+        if (adapter != null) {
+            adapter.notifyDataSetChanged();
+            Log.d(TAG, "Adapter notificado de cambios");
         }
-        Log.e(TAG, "Error mostrado: " + message);
+
+        // Actualizar totales en la UI
+        updateTotals(budgetItems.size(), totalAmount);
+
+        if (budgetItems.isEmpty()) {
+            Log.d(TAG, "UI actualizada - No hay items para mostrar");
+        } else {
+            Log.d(TAG, "Datos actualizados exitosamente - " + budgetItems.size() + " items");
+        }
     }
-
-    // ==========================================
-    // EVENTOS DE CLICKS
-    // ==========================================
-
-    private void onItemClick(BudgetItem item) {
-        Log.d(TAG, "Click en item: " + item.getMaterialName());
-        Toast.makeText(requireContext(), "Seleccionado: " + item.getMaterialName(), Toast.LENGTH_SHORT).show();
-    }
-
-    private void onItemMenuClick(BudgetItem item) {
-        Log.d(TAG, "Menú solicitado para item: " + item.getMaterialName());
-        Toast.makeText(requireContext(), "Menú para: " + item.getMaterialName(), Toast.LENGTH_SHORT).show();
-        // TODO: Implementar menú contextual (editar, eliminar, etc.)
-    }
-
-    // ==========================================
-    // MÉTODOS PÚBLICOS
-    // ==========================================
 
     /**
-     * Método público para refrescar datos
+     * Actualizar los totales mostrados en la UI
      */
-    public void refreshData() {
-        Log.d(TAG, "refreshData solicitado - delegando a fragment padre");
-        // Los datos vienen del fragment padre (PresupuestosFragment)
-        // que a su vez los obtiene del ViewModel
-        if (getParentFragment() instanceof PresupuestosFragment) {
-            ((PresupuestosFragment) getParentFragment()).refreshBudgetData();
+    private void updateTotals(int itemCount, double totalAmount) {
+        Log.d(TAG, "Totales actualizados - Items: " + itemCount + ", Monto: " + totalAmount);
+
+        try {
+            // Usar los IDs correctos del layout fragment_table_budget_initial.xml
+
+            // Actualizar contador de items
+            TextView tvTotalItems = binding.tvTotalItemsInitial;
+            if (tvTotalItems != null) {
+                String itemsText = itemCount == 1 ? "1 item" : itemCount + " items";
+                tvTotalItems.setText(itemsText);
+            }
+
+            // Actualizar total de presupuesto
+            TextView tvTotalBudget = binding.tvTotalBudgetInitial;
+            if (tvTotalBudget != null) {
+                tvTotalBudget.setText(currencyFormat.format(totalAmount));
+            }
+
+        } catch (Exception e) {
+            Log.e(TAG, "Error actualizando totales en UI: " + e.getMessage(), e);
         }
     }
 
-    // ==========================================
-    // CICLO DE VIDA
-    // ==========================================
+    /**
+     * Crear BudgetItem desde Map del backend
+     */
+    private BudgetItem createBudgetItemFromMap(Map<String, Object> itemData) {
+        BudgetItem item = new BudgetItem();
+
+        // ID
+        if (itemData.get("id") instanceof Number) {
+            item.setId(((Number) itemData.get("id")).longValue());
+        }
+
+        // Descripción
+        item.setDescription((String) itemData.get("description"));
+
+        // Categoría
+        item.setCategory((String) itemData.get("category"));
+        item.setCategoryDisplay((String) itemData.get("category_display"));
+
+        // Espacios
+        item.setSpaces((String) itemData.get("spaces"));
+
+        // Cantidad
+        if (itemData.get("quantity") instanceof String) {
+            try {
+                item.setQuantity(Double.parseDouble((String) itemData.get("quantity")));
+            } catch (NumberFormatException e) {
+                item.setQuantity(1.0);
+            }
+        } else if (itemData.get("quantity") instanceof Number) {
+            item.setQuantity(((Number) itemData.get("quantity")).doubleValue());
+        }
+
+        // Unidad
+        item.setUnit((String) itemData.get("unit"));
+
+        // Precio unitario
+        if (itemData.get("unit_price") instanceof String) {
+            try {
+                item.setUnitPrice(Double.parseDouble((String) itemData.get("unit_price")));
+            } catch (NumberFormatException e) {
+                item.setUnitPrice(0.0);
+            }
+        } else if (itemData.get("unit_price") instanceof Number) {
+            item.setUnitPrice(((Number) itemData.get("unit_price")).doubleValue());
+        }
+
+        // Precio total
+        if (itemData.get("total_price") instanceof String) {
+            try {
+                item.setTotalPrice(Double.parseDouble((String) itemData.get("total_price")));
+            } catch (NumberFormatException e) {
+                item.setTotalPrice(item.getQuantity() * item.getUnitPrice());
+            }
+        } else if (itemData.get("total_price") instanceof Number) {
+            item.setTotalPrice(((Number) itemData.get("total_price")).doubleValue());
+        }
+
+        // Proveedor
+        item.setSupplierName((String) itemData.get("supplier_name"));
+        if (itemData.get("supplier") instanceof Number) {
+            item.setSupplierId(((Number) itemData.get("supplier")).longValue());
+        }
+
+        // Notas
+        item.setNotes((String) itemData.get("notes"));
+
+        return item;
+    }
+
+    /**
+     * Clase modelo para items del presupuesto
+     */
+    public static class BudgetItem {
+        private Long id;
+        private String description;
+        private String category;
+        private String categoryDisplay;
+        private String spaces;
+        private Double quantity;
+        private String unit;
+        private Double unitPrice;
+        private Double totalPrice;
+        private String supplierName;
+        private Long supplierId;
+        private String notes;
+
+        // Constructor vacío
+        public BudgetItem() {}
+
+        // Getters y Setters
+        public Long getId() { return id; }
+        public void setId(Long id) { this.id = id; }
+
+        public String getDescription() { return description; }
+        public void setDescription(String description) { this.description = description; }
+
+        public String getCategory() { return category; }
+        public void setCategory(String category) { this.category = category; }
+
+        public String getCategoryDisplay() { return categoryDisplay; }
+        public void setCategoryDisplay(String categoryDisplay) { this.categoryDisplay = categoryDisplay; }
+
+        public String getSpaces() { return spaces; }
+        public void setSpaces(String spaces) { this.spaces = spaces; }
+
+        public Double getQuantity() { return quantity != null ? quantity : 1.0; }
+        public void setQuantity(Double quantity) { this.quantity = quantity; }
+
+        public String getUnit() { return unit; }
+        public void setUnit(String unit) { this.unit = unit; }
+
+        public Double getUnitPrice() { return unitPrice != null ? unitPrice : 0.0; }
+        public void setUnitPrice(Double unitPrice) { this.unitPrice = unitPrice; }
+
+        public Double getTotalPrice() { return totalPrice != null ? totalPrice : 0.0; }
+        public void setTotalPrice(Double totalPrice) { this.totalPrice = totalPrice; }
+
+        public String getSupplierName() { return supplierName; }
+        public void setSupplierName(String supplierName) { this.supplierName = supplierName; }
+
+        public Long getSupplierId() { return supplierId; }
+        public void setSupplierId(Long supplierId) { this.supplierId = supplierId; }
+
+        public String getNotes() { return notes; }
+        public void setNotes(String notes) { this.notes = notes; }
+    }
 
     @Override
     public void onDestroyView() {
         super.onDestroyView();
         binding = null;
         Log.d(TAG, "Vista destruida");
-    }
-
-    // ==========================================
-    // CLASE MODELO LOCAL
-    // ==========================================
-
-    /**
-     * Clase modelo para items del presupuesto inicial
-     * Representa datos locales convertidos desde el backend
-     */
-    public static class BudgetItem {
-        private long id;
-        private String materialName;
-        private String category;
-        private double quantity;
-        private String unit;
-        private double unitPrice;
-        private String supplierName;
-        private double supplierRating;
-
-        public BudgetItem(long id, String materialName, String category, double quantity,
-                          String unit, double unitPrice, String supplierName, double supplierRating) {
-            this.id = id;
-            this.materialName = materialName;
-            this.category = category;
-            this.quantity = quantity;
-            this.unit = unit;
-            this.unitPrice = unitPrice;
-            this.supplierName = supplierName;
-            this.supplierRating = supplierRating;
-        }
-
-        public double getTotalPrice() {
-            return quantity * unitPrice;
-        }
-
-        // Getters
-        public long getId() { return id; }
-        public String getMaterialName() { return materialName; }
-        public String getCategory() { return category; }
-        public double getQuantity() { return quantity; }
-        public String getUnit() { return unit; }
-        public double getUnitPrice() { return unitPrice; }
-        public String getSupplierName() { return supplierName; }
-        public double getSupplierRating() { return supplierRating; }
-
-        // Setters (para edición)
-        public void setQuantity(double quantity) { this.quantity = quantity; }
-        public void setUnitPrice(double unitPrice) { this.unitPrice = unitPrice; }
-        public void setSupplierName(String supplierName) { this.supplierName = supplierName; }
-
-        @Override
-        public String toString() {
-            return "BudgetItem{" +
-                    "id=" + id +
-                    ", materialName='" + materialName + '\'' +
-                    ", category='" + category + '\'' +
-                    ", quantity=" + quantity +
-                    ", unit='" + unit + '\'' +
-                    ", unitPrice=" + unitPrice +
-                    ", supplierName='" + supplierName + '\'' +
-                    ", supplierRating=" + supplierRating +
-                    '}';
-        }
     }
 }

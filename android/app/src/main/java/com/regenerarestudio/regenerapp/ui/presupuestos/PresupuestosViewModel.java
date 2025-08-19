@@ -10,7 +10,9 @@ import androidx.lifecycle.MutableLiveData;
 
 import com.regenerarestudio.regenerapp.data.api.ApiClient;
 import com.regenerarestudio.regenerapp.data.api.ApiService;
+import com.regenerarestudio.regenerapp.data.responses.PaginatedResponse;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -121,7 +123,7 @@ public class PresupuestosViewModel extends AndroidViewModel {
     }
 
     /**
-     * Cargar presupuesto inicial del proyecto
+     * Cargar presupuesto inicial del proyecto - CORREGIDO PARA MANEJAR PAGINATEDRESPONSE
      * URL CORREGIDA: /api/budgets/budget-items/?project={projectId}
      */
     public void loadBudgetInitial(Long projectId) {
@@ -135,18 +137,28 @@ public class PresupuestosViewModel extends AndroidViewModel {
         isLoadingBudgetLiveData.setValue(true);
         errorLiveData.setValue(null);
 
-        // URL CORREGIDA
-        Call<List<Map<String, Object>>> call = apiService.getInitialBudget(projectId);
+        // URL CORREGIDA - Ahora maneja PaginatedResponse
+        Call<PaginatedResponse<Map<String, Object>>> call = apiService.getInitialBudget(projectId);
 
-        call.enqueue(new Callback<List<Map<String, Object>>>() {
+        call.enqueue(new Callback<PaginatedResponse<Map<String, Object>>>() {
             @Override
-            public void onResponse(@NonNull Call<List<Map<String, Object>>> call,
-                                   @NonNull Response<List<Map<String, Object>>> response) {
+            public void onResponse(@NonNull Call<PaginatedResponse<Map<String, Object>>> call,
+                                   @NonNull Response<PaginatedResponse<Map<String, Object>>> response) {
                 isLoadingBudgetLiveData.setValue(false);
 
                 if (response.isSuccessful() && response.body() != null) {
-                    Log.d(TAG, "Presupuesto inicial cargado exitosamente. Items: " + response.body().size());
-                    budgetInitialLiveData.setValue(response.body());
+                    PaginatedResponse<Map<String, Object>> paginatedResponse = response.body();
+
+                    // Extraer los resultados de la respuesta paginada
+                    List<Map<String, Object>> budgetItems = paginatedResponse.getResults();
+
+                    if (budgetItems != null) {
+                        Log.d(TAG, "Presupuesto inicial cargado exitosamente. Total Items: " + budgetItems.size());
+                        budgetInitialLiveData.setValue(budgetItems);
+                    } else {
+                        Log.w(TAG, "Respuesta exitosa pero results es null");
+                        budgetInitialLiveData.setValue(new ArrayList<>());
+                    }
                 } else {
                     String error = "Error al cargar presupuesto inicial: " + response.code();
                     Log.e(TAG, error);
@@ -166,7 +178,7 @@ public class PresupuestosViewModel extends AndroidViewModel {
             }
 
             @Override
-            public void onFailure(@NonNull Call<List<Map<String, Object>>> call, @NonNull Throwable t) {
+            public void onFailure(@NonNull Call<PaginatedResponse<Map<String, Object>>> call, @NonNull Throwable t) {
                 isLoadingBudgetLiveData.setValue(false);
 
                 String error = "Error de conexión al cargar presupuesto inicial: " + t.getMessage();
@@ -177,7 +189,7 @@ public class PresupuestosViewModel extends AndroidViewModel {
     }
 
     /**
-     * Cargar gastos reales del proyecto
+     * Cargar gastos reales del proyecto - CORREGIDO PARA MANEJAR PAGINATEDRESPONSE
      * URL CORREGIDA: /api/budgets/real-expenses/?project={projectId}
      */
     public void loadExpensesReal(Long projectId) {
@@ -191,18 +203,28 @@ public class PresupuestosViewModel extends AndroidViewModel {
         isLoadingExpensesLiveData.setValue(true);
         errorLiveData.setValue(null);
 
-        // URL CORREGIDA
-        Call<List<Map<String, Object>>> call = apiService.getExpenses(projectId);
+        // URL CORREGIDA - Ahora maneja PaginatedResponse
+        Call<PaginatedResponse<Map<String, Object>>> call = apiService.getExpenses(projectId);
 
-        call.enqueue(new Callback<List<Map<String, Object>>>() {
+        call.enqueue(new Callback<PaginatedResponse<Map<String, Object>>>() {
             @Override
-            public void onResponse(@NonNull Call<List<Map<String, Object>>> call,
-                                   @NonNull Response<List<Map<String, Object>>> response) {
+            public void onResponse(@NonNull Call<PaginatedResponse<Map<String, Object>>> call,
+                                   @NonNull Response<PaginatedResponse<Map<String, Object>>> response) {
                 isLoadingExpensesLiveData.setValue(false);
 
                 if (response.isSuccessful() && response.body() != null) {
-                    Log.d(TAG, "Gastos reales cargados exitosamente. Items: " + response.body().size());
-                    expensesRealLiveData.setValue(response.body());
+                    PaginatedResponse<Map<String, Object>> paginatedResponse = response.body();
+
+                    // Extraer los resultados de la respuesta paginada
+                    List<Map<String, Object>> expenseItems = paginatedResponse.getResults();
+
+                    if (expenseItems != null) {
+                        Log.d(TAG, "Gastos reales cargados exitosamente. Total Items: " + expenseItems.size());
+                        expensesRealLiveData.setValue(expenseItems);
+                    } else {
+                        Log.w(TAG, "Respuesta exitosa pero results es null");
+                        expensesRealLiveData.setValue(new ArrayList<>());
+                    }
                 } else {
                     String error = "Error al cargar gastos reales: " + response.code();
                     Log.e(TAG, error);
@@ -222,7 +244,7 @@ public class PresupuestosViewModel extends AndroidViewModel {
             }
 
             @Override
-            public void onFailure(@NonNull Call<List<Map<String, Object>>> call, @NonNull Throwable t) {
+            public void onFailure(@NonNull Call<PaginatedResponse<Map<String, Object>>> call, @NonNull Throwable t) {
                 isLoadingExpensesLiveData.setValue(false);
 
                 String error = "Error de conexión al cargar gastos reales: " + t.getMessage();
