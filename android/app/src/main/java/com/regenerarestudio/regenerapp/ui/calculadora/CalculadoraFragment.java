@@ -1,5 +1,6 @@
 package com.regenerarestudio.regenerapp.ui.calculadora;
 
+import android.app.AlertDialog;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -24,9 +25,11 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
 import com.regenerarestudio.regenerapp.MainActivity;
 import com.regenerarestudio.regenerapp.R;
+import com.regenerarestudio.regenerapp.data.models.SupplierWithPrice;
 import com.regenerarestudio.regenerapp.databinding.FragmentCalculadoraBinding;
 import com.regenerarestudio.regenerapp.data.models.CalculationResponse;
 import com.regenerarestudio.regenerapp.ui.calculadora.adapters.CalculationDetailsAdapter;
+import com.regenerarestudio.regenerapp.utils.CalculationTranslations;
 
 import java.util.ArrayList;
 import java.util.HashMap;

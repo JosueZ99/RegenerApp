@@ -1,5 +1,7 @@
 package com.regenerarestudio.regenerapp.ui.calculadora;
 
+import android.util.Log;
+
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
@@ -7,7 +9,10 @@ import androidx.lifecycle.ViewModel;
 import com.regenerarestudio.regenerapp.data.api.ApiClient;
 import com.regenerarestudio.regenerapp.data.api.ApiService;
 import com.regenerarestudio.regenerapp.data.models.CalculationResponse;
+import com.regenerarestudio.regenerapp.data.models.Supplier;
 import com.regenerarestudio.regenerapp.data.models.SupplierWithPrice;
+import com.regenerarestudio.regenerapp.data.responses.PaginatedResponse;
+
 import java.util.ArrayList;
 import java.util.List;
 
