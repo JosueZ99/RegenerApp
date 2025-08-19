@@ -73,7 +73,7 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:layout_marginEnd="12dp"
-                    style="@style/Widget.Material3.TextInputLayout.OutlinedBox.Dense">
+                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense">
 
                     <com.google.android.material.textfield.TextInputEditText
                         android:id="@+id/et_search_initial"
@@ -95,7 +95,7 @@
                     app:icon="@drawable/ic_filter_list_24"
                     app:iconPadding="0dp"
                     app:iconGravity="textStart"
-                    style="@style/Widget.Material3.Button.OutlinedButton" />
+                    style="@style/Widget.MaterialComponents.Button.OutlinedButton" />
 
             </LinearLayout>
 
