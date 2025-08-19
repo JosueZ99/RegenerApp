@@ -363,8 +363,8 @@ public class CalculadoraViewModel extends ViewModel {
             supplierWithPrice.setCommercialName(supplier.getCommercialName());
             supplierWithPrice.setDeliveryTime(supplier.getDeliveryTime());
             supplierWithPrice.setRating(supplier.getRating());
-            supplierWithPrice.setPreferred(supplier.isPreferred());
-            supplierWithPrice.setLocation(supplier.getLocation());
+            supplierWithPrice.setPreferred(supplier.getIsPreferred());
+            supplierWithPrice.setLocation(supplier.getCity());
             supplierWithPrice.setPhone(supplier.getPhone());
             supplierWithPrice.setWhatsappUrl(supplier.getWhatsappUrl());
 

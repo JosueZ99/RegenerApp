@@ -547,16 +547,15 @@ public class CalculadoraFragment extends Fragment {
         }
 
         // Verificar si hay materiales sugeridos
-        List<Map<String, Object>> materialSuggestions = currentCalculation.getMaterialSuggestions();
-        if (materialSuggestions == null || materialSuggestions.isEmpty()) {
+        List<CalculationResponse.MaterialSuggestion> materialSuggestions = currentCalculation.getMaterialSuggestions();        if (materialSuggestions == null || materialSuggestions.isEmpty()) {
             Toast.makeText(requireContext(), "No hay materiales disponibles para este cálculo", Toast.LENGTH_SHORT).show();
             return;
         }
 
         // Obtener el primer material sugerido (o permitir selección múltiple en el futuro)
-        Map<String, Object> selectedMaterial = materialSuggestions.get(0);
-        Long materialId = ((Number) selectedMaterial.get("id")).longValue();
-        String materialName = (String) selectedMaterial.get("name");
+        CalculationResponse.MaterialSuggestion selectedMaterial = materialSuggestions.get(0);
+        Long materialId = (long) selectedMaterial.getId();
+        String materialName = selectedMaterial.getName();
 
         // Mostrar diálogo de carga
         MaterialAlertDialogBuilder loadingDialog = new MaterialAlertDialogBuilder(requireContext())
