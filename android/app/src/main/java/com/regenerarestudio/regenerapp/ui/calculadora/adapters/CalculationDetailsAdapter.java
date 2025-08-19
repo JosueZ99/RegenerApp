@@ -9,6 +9,7 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.regenerarestudio.regenerapp.R;
+import com.regenerarestudio.regenerapp.utils.CalculationTranslations;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -75,32 +76,40 @@ public class CalculationDetailsAdapter extends RecyclerView.Adapter<CalculationD
 
     // Clase para items de detalle
     public static class DetailItem {
-        private final String label;
-        private final String value;
-        private final String type;
+        private String label;
+        private String value;
+        private String originalKey;
 
-        public DetailItem(String label, String value) {
+        public DetailItem(String originalKey, String label, String value) {
+            this.originalKey = originalKey;
             this.label = label;
             this.value = value;
-            this.type = "text";
         }
 
-        public DetailItem(String label, String value, String type) {
-            this.label = label;
-            this.value = value;
-            this.type = type;
+        // Constructor que aplica traducciones automáticamente
+        public DetailItem(String key, Object rawValue) {
+            this.originalKey = key;
+            this.label = CalculationTranslations.translateDetailKey(key);
+            this.value = CalculationTranslations.formatDetailValue(key, rawValue);
         }
 
-        public String getLabel() {
-            return label;
+        public String getLabel() { return label; }
+        public void setLabel(String label) { this.label = label; }
+
+        public String getValue() { return value; }
+        public void setValue(String value) { this.value = value; }
+
+        public String getOriginalKey() { return originalKey; }
+        public void setOriginalKey(String originalKey) { this.originalKey = originalKey; }
+
+        // Metodo para verificar si es un campo de costo
+        public boolean isCostField() {
+            return CalculationTranslations.isCostField(originalKey);
         }
 
-        public String getValue() {
-            return value;
-        }
-
-        public String getType() {
-            return type;
+        // Metodo para verificar si es un campo de cantidad
+        public boolean isQuantityField() {
+            return CalculationTranslations.isQuantityField(originalKey);
         }
 
         // Factory methods para diferentes tipos de datos
@@ -134,6 +143,20 @@ public class CalculationDetailsAdapter extends RecyclerView.Adapter<CalculationD
 
         public static DetailItem createVolume(String label, double value) {
             return new DetailItem(label, String.format(Locale.getDefault(), "%.2f L", value), "volume");
+        }
+
+        /**
+         * Metodo helper para formatear etiquetas usando las traducciones
+         */
+        public static String formatDetailLabel(String key) {
+            return CalculationTranslations.translateDetailKey(key);
+        }
+
+        /**
+         * Metodo helper para formatear valores usando las traducciones
+         */
+        public static String formatDetailValue(String key, Object value) {
+            return CalculationTranslations.formatDetailValue(key, value);
         }
     }
 }

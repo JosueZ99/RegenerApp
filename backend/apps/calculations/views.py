@@ -422,6 +422,110 @@ class CalculationViewSet(viewsets.ModelViewSet):
         })
     
     @action(detail=False, methods=['post'])
+    def calculate_led(self, request):
+        """
+        Calculadora de cintas LED (alias para calculate_led_strip)
+        POST /api/calculations/calculate_led/
+        """
+        # Reutilizar la lógica del método calculate_led_strip existente
+        return self.calculate_led_strip(request)
+
+    @action(detail=False, methods=['post'])
+    def calculate_cables(self, request):
+        """
+        Calculadora de cables
+        POST /api/calculations/calculate_cables/
+        """
+        # Validar datos de entrada
+        data = request.data
+        
+        # Validaciones básicas
+        required_fields = ['project_id', 'total_length', 'wire_gauge', 'cable_type']
+        for field in required_fields:
+            if field not in data or not data[field]:
+                return Response(
+                    {'error': f'El campo {field} es requerido'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+        
+        try:
+            total_length = Decimal(str(data['total_length']))
+            wire_gauge = data['wire_gauge']
+            cable_type = data['cable_type']
+            installation_type = data.get('installation_type', 'Aérea')
+            
+            # Metros por rollo estándar (100 metros)
+            meters_per_roll = Decimal('100.0')
+            
+            # Factor de desperdicio del 15% para cables
+            waste_factor = Decimal('0.15')
+            length_with_waste = total_length * (1 + waste_factor)
+            
+            # Rollos necesarios
+            rolls_needed = math.ceil(length_with_waste / meters_per_roll)
+            
+            # Buscar material sugerido
+            material = None
+            estimated_cost = None
+            
+            if data.get('material_id'):
+                try:
+                    from apps.materials.models import Material
+                    material = Material.objects.get(id=data['material_id'])
+                    if material.reference_price:
+                        estimated_cost = rolls_needed * material.reference_price
+                except Material.DoesNotExist:
+                    pass
+            
+            # Crear registro de cálculo
+            from .models import CalculationType, Calculation
+            calculation_type = CalculationType.objects.get(code='cable')
+            
+            calculation = Calculation.objects.create(
+                project_id=data['project_id'],
+                calculation_type=calculation_type,
+                material=material,
+                input_data=dict(data),
+                calculated_quantity=length_with_waste,
+                unit='metros',
+                estimated_cost=estimated_cost,
+                detailed_results={
+                    'base_length': float(total_length),
+                    'waste_factor_applied': float(waste_factor),
+                    'rolls_needed': rolls_needed,
+                    'meters_per_roll': float(meters_per_roll)
+                }
+            )
+            
+            return Response({
+                'calculation_id': calculation.id,
+                'calculation_type': 'cables',
+                'calculated_quantity': float(length_with_waste),
+                'unit': 'metros',
+                'estimated_cost': float(estimated_cost) if estimated_cost else None,
+                'detailed_results': calculation.detailed_results,
+                'specific_details': {
+                    'total_length': float(length_with_waste),
+                    'wire_gauge': wire_gauge,
+                    'cable_type': cable_type,
+                    'installation_type': installation_type,
+                    'rolls_needed': rolls_needed
+                },
+                'material_suggestions': self._get_material_suggestions('lighting', 'cable')
+            })
+            
+        except (ValueError, TypeError, Decimal.InvalidOperation) as e:
+            return Response(
+                {'error': f'Error en los datos de entrada: {str(e)}'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        except Exception as e:
+            return Response(
+                {'error': f'Error interno del servidor: {str(e)}'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+    
+    @action(detail=False, methods=['post'])
     def calculate_empaste(self, request):
         """
         Calculadora de empaste

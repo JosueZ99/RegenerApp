@@ -16,6 +16,9 @@ public class CalculationResponse {
     private Map<String, Object> detailedResults;
     private Map<String, Object> specificDetails;
     private List<MaterialSuggestion> materialSuggestions;
+    private Long selectedSupplierId;
+    private String selectedSupplierName;
+    private Long selectedMaterialId;
 
     // Constructores
     public CalculationResponse() {}
@@ -99,10 +102,39 @@ public class CalculationResponse {
     }
 
     public String getFormattedCost() {
-        if (estimatedCost != null) {
+        if (estimatedCost != null && estimatedCost > 0) {
             return String.format("$%.2f", estimatedCost);
         }
-        return "No disponible";
+        return "Seleccione proveedor";
+    }
+
+    public Long getSelectedSupplierId() {
+        return selectedSupplierId;
+    }
+
+    public void setSelectedSupplierId(Long selectedSupplierId) {
+        this.selectedSupplierId = selectedSupplierId;
+    }
+
+    public String getSelectedSupplierName() {
+        return selectedSupplierName;
+    }
+
+    public void setSelectedSupplierName(String selectedSupplierName) {
+        this.selectedSupplierName = selectedSupplierName;
+    }
+
+    public Long getSelectedMaterialId() {
+        return selectedMaterialId;
+    }
+
+    public void setSelectedMaterialId(Long selectedMaterialId) {
+        this.selectedMaterialId = selectedMaterialId;
+    }
+
+    // Metodo helper para verificar si tiene proveedor seleccionado
+    public boolean hasSelectedProvider() {
+        return selectedSupplierId != null && selectedSupplierName != null;
     }
 
     // Clase interna para sugerencias de materiales
@@ -162,5 +194,22 @@ public class CalculationResponse {
         public void setUnit(String unit) {
             this.unit = unit;
         }
+    }
+
+    // Metodo para obtener material suggestions como lista de Map<String, Object>
+    public List<Map<String, Object>> getMaterialSuggestionsAsMap() {
+        List<Map<String, Object>> result = new ArrayList<>();
+        if (materialSuggestions != null) {
+            for (MaterialSuggestion suggestion : materialSuggestions) {
+                Map<String, Object> map = new HashMap<>();
+                map.put("id", suggestion.getId());
+                map.put("name", suggestion.getName());
+                map.put("code", suggestion.getCode());
+                map.put("reference_price", suggestion.getReferencePrice());
+                map.put("unit", suggestion.getUnit());
+                result.add(map);
+            }
+        }
+        return result;
     }
 }

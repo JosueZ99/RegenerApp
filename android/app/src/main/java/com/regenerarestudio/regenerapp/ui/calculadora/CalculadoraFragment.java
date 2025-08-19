@@ -473,14 +473,179 @@ public class CalculadoraFragment extends Fragment {
 
         // Mostrar resultado principal
         binding.tvResultQuantity.setText(result.getFormattedQuantity());
-        binding.tvResultCost.setText(result.getFormattedCost());
+
+        // Si no hay costo estimado, mostrar "Seleccione proveedor"
+        if (result.getEstimatedCost() == null || result.getEstimatedCost() <= 0) {
+            binding.tvResultCost.setText("Seleccione proveedor");
+            binding.tvResultCost.setTextColor(getResources().getColor(R.color.gray_600, null));
+        } else {
+            binding.tvResultCost.setText(result.getFormattedCost());
+            binding.tvResultCost.setTextColor(getResources().getColor(R.color.success, null));
+        }
 
         // Mostrar cards de resultado
         cardResult.setVisibility(View.VISIBLE);
         cardDetails.setVisibility(View.VISIBLE);
 
-        // Poblar detalles específicos
-        populateDetails(result);
+        // Configurar botón según el estado
+        setupActionButton();
+
+        // Poblar detalles específicos con traducciones
+        populateDetailsWithTranslations(result);
+    }
+
+    private void setupActionButton() {
+        // Limpiar botones existentes
+        binding.btnAddToBudget.setVisibility(View.GONE);
+
+        // Si no hay costo estimado, mostrar botón de seleccionar proveedor
+        if (currentCalculation.getEstimatedCost() == null || currentCalculation.getEstimatedCost() <= 0) {
+            binding.btnAddToBudget.setText("Escoger Proveedor");
+            binding.btnAddToBudget.setIcon(getResources().getDrawable(R.drawable.ic_store, null));
+            binding.btnAddToBudget.setOnClickListener(v -> showProviderSelectionDialog());
+            binding.btnAddToBudget.setVisibility(View.VISIBLE);
+        } else {
+            // Si ya hay costo, mostrar botón para agregar al presupuesto
+            binding.btnAddToBudget.setText("Añadir al Presupuesto");
+            binding.btnAddToBudget.setIcon(getResources().getDrawable(R.drawable.ic_add_to_budget, null));
+            binding.btnAddToBudget.setOnClickListener(v -> showAddToBudgetDialog());
+            binding.btnAddToBudget.setVisibility(View.VISIBLE);
+        }
+    }
+
+    private void populateDetailsWithTranslations(CalculationResponse result) {
+        List<CalculationDetailsAdapter.DetailItem> details = new ArrayList<>();
+
+        // Agregar detalles específicos con traducciones
+        if (result.getSpecificDetails() != null) {
+            for (Map.Entry<String, Object> entry : result.getSpecificDetails().entrySet()) {
+                String label = CalculationTranslations.translateDetailKey(entry.getKey());
+                String value = CalculationTranslations.formatDetailValue(entry.getKey(), entry.getValue());
+                details.add(new CalculationDetailsAdapter.DetailItem(label, value));
+            }
+        }
+
+        // Agregar resultados detallados con traducciones
+        if (result.getDetailedResults() != null) {
+            for (Map.Entry<String, Object> entry : result.getDetailedResults().entrySet()) {
+                String label = CalculationTranslations.translateDetailKey(entry.getKey());
+                String value = CalculationTranslations.formatDetailValue(entry.getKey(), entry.getValue());
+                details.add(new CalculationDetailsAdapter.DetailItem(label, value));
+            }
+        }
+
+        detailsAdapter.updateDetails(details);
+    }
+
+    private void showProviderSelectionDialog() {
+        if (currentCalculation == null) {
+            Toast.makeText(requireContext(), "Error: No hay cálculo disponible", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        // Verificar si hay materiales sugeridos
+        List<Map<String, Object>> materialSuggestions = currentCalculation.getMaterialSuggestions();
+        if (materialSuggestions == null || materialSuggestions.isEmpty()) {
+            Toast.makeText(requireContext(), "No hay materiales disponibles para este cálculo", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        // Obtener el primer material sugerido (o permitir selección múltiple en el futuro)
+        Map<String, Object> selectedMaterial = materialSuggestions.get(0);
+        Long materialId = ((Number) selectedMaterial.get("id")).longValue();
+        String materialName = (String) selectedMaterial.get("name");
+
+        // Mostrar diálogo de carga
+        MaterialAlertDialogBuilder loadingDialog = new MaterialAlertDialogBuilder(requireContext())
+                .setTitle("Cargando proveedores...")
+                .setMessage("Buscando proveedores para: " + materialName)
+                .setCancelable(false);
+
+        loadingDialog.show();
+
+        // Cargar proveedores para este material
+        calculadoraViewModel.loadProvidersForMaterial(materialId, new CalculadoraViewModel.ProvidersCallback() {
+            @Override
+            public void onProvidersLoaded(List<SupplierWithPrice> providers) {
+                loadingDialog.create().dismiss();
+                if (providers.isEmpty()) {
+                    showNoProvidersDialog(materialName);
+                } else {
+                    showProvidersSelectionDialog(providers, materialId, materialName);
+                }
+            }
+
+            @Override
+            public void onError(String error) {
+                loadingDialog.create().dismiss();
+                Toast.makeText(requireContext(), "Error cargando proveedores: " + error, Toast.LENGTH_LONG).show();
+            }
+        });
+    }
+
+    private void showNoProvidersDialog(String materialName) {
+        new MaterialAlertDialogBuilder(requireContext())
+                .setTitle("Sin proveedores disponibles")
+                .setMessage("No se encontraron proveedores para el material: " + materialName +
+                        "\n\n¿Desea continuar agregando al presupuesto sin precio?")
+                .setPositiveButton("Continuar sin precio", (dialog, which) -> {
+                    // Agregar al presupuesto sin precio
+                    showAddToBudgetDialog();
+                })
+                .setNegativeButton("Cancelar", (dialog, which) -> dialog.dismiss())
+                .show();
+    }
+
+    private void showProvidersSelectionDialog(List<SupplierWithPrice> providers, Long materialId, String materialName) {
+        // Crear lista de nombres de proveedores para el diálogo
+        String[] providerNames = new String[providers.size()];
+        for (int i = 0; i < providers.size(); i++) {
+            SupplierWithPrice provider = providers.get(i);
+            providerNames[i] = provider.getSupplierName() + " - $" +
+                    String.format("%.2f", provider.getPrice()) +
+                    " (" + provider.getDeliveryTime() + ")";
+        }
+
+        new MaterialAlertDialogBuilder(requireContext())
+                .setTitle("Seleccionar Proveedor")
+                .setMessage("Material: " + materialName)
+                .setSingleChoiceItems(providerNames, -1, null)
+                .setPositiveButton("Seleccionar", (dialog, which) -> {
+                    int selectedIndex = ((AlertDialog) dialog).getListView().getCheckedItemPosition();
+                    if (selectedIndex >= 0) {
+                        SupplierWithPrice selectedProvider = providers.get(selectedIndex);
+                        updateCalculationWithProvider(selectedProvider, materialId);
+                        dialog.dismiss();
+                    } else {
+                        Toast.makeText(requireContext(), "Por favor seleccione un proveedor", Toast.LENGTH_SHORT).show();
+                    }
+                })
+                .setNegativeButton("Cancelar", (dialog, which) -> dialog.dismiss())
+                .show();
+    }
+
+    private void updateCalculationWithProvider(SupplierWithPrice provider, Long materialId) {
+        // Calcular nuevo costo estimado
+        double quantity = currentCalculation.getCalculatedQuantity();
+        double estimatedCost = quantity * provider.getPrice();
+
+        // Actualizar el objeto de cálculo actual
+        currentCalculation.setEstimatedCost(estimatedCost);
+        currentCalculation.setSelectedSupplierId(provider.getSupplierId());
+        currentCalculation.setSelectedSupplierName(provider.getSupplierName());
+        currentCalculation.setSelectedMaterialId(materialId);
+
+        // Actualizar la UI
+        binding.tvResultCost.setText(String.format("$%.2f", estimatedCost));
+        binding.tvResultCost.setTextColor(getResources().getColor(R.color.success, null));
+
+        // Cambiar el botón a "Añadir al Presupuesto"
+        setupActionButton();
+
+        // Mostrar confirmación
+        Toast.makeText(requireContext(),
+                "Proveedor seleccionado: " + provider.getSupplierName(),
+                Toast.LENGTH_SHORT).show();
     }
 
     private void populateDetails(CalculationResponse result) {
