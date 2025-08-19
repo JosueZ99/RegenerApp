@@ -10,7 +10,6 @@ import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
 import android.widget.LinearLayout;
 import android.widget.Toast;
-import android.app.AlertDialog;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -667,9 +666,6 @@ public class CalculadoraFragment extends Fragment {
                 .show();
     }
 
-    // Reemplazar el método showProvidersSelectionDialog en CalculadoraFragment.java
-// IMPORTANTE: También agregar import android.app.AlertDialog al inicio del archivo
-
     private void showProvidersSelectionDialog(List<SupplierWithPrice> providers, Long materialId, String materialName) {
         Log.d("CalculadoraFragment", "=== CREANDO DIÁLOGO DE PROVEEDORES ===");
         Log.d("CalculadoraFragment", "Total proveedores recibidos: " + providers.size());
@@ -694,10 +690,9 @@ public class CalculadoraFragment extends Fragment {
 
         Log.d("CalculadoraFragment", "Usando AlertDialog.Builder estándar...");
 
-        // USAR ALERTDIALOG ESTÁNDAR EN LUGAR DE MATERIAL
+        // USAR ALERTDIALOG ESTÁNDAR - SIN setMessage para evitar conflictos
         AlertDialog.Builder builder = new AlertDialog.Builder(requireContext())
-                .setTitle("Seleccionar Proveedor")
-                .setMessage("Material: " + materialName + "\n\nSeleccione un proveedor:")
+                .setTitle("Seleccionar Proveedor para " + materialName)  // Incluir el material en el título
                 .setItems(providerNames, (dialog, which) -> {
                     // Selección directa
                     Log.d("CalculadoraFragment", "Proveedor seleccionado: " + which + " - " + providerNames[which]);
@@ -719,8 +714,6 @@ public class CalculadoraFragment extends Fragment {
 
         Log.d("CalculadoraFragment", "AlertDialog mostrado exitosamente");
     }
-
-// Mantener los otros métodos igual:
 
     private void updateCalculationWithProvider(SupplierWithPrice selectedProvider, Long materialId) {
         Log.d("CalculadoraFragment", "=== ACTUALIZANDO CÁLCULO CON PROVEEDOR ===");
