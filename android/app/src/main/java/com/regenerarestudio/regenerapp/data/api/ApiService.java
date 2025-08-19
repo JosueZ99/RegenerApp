@@ -53,9 +53,9 @@ public interface ApiService {
 
     /**
      * Seleccionar un proyecto (marca como seleccionado)
-     * POST /api/projects/projects/{id}/select/
+     * POST /api/projects/projects/{id}/select_project/
      */
-    @POST("projects/projects/{id}/select/")
+    @POST("projects/projects/{id}/select_project/")
     Call<ProjectSelectionResponse> selectProject(@Path("id") Long projectId);
 
     /**
@@ -63,7 +63,7 @@ public interface ApiService {
      * GET /api/projects/projects/{id}/dashboard/
      */
     @GET("projects/projects/{id}/dashboard/")
-    Call<DashboardResponse> getProjectDashboard(@Path("id") Long projectId);
+    Call<DashboardResponse> getDashboard(@Path("id") Long projectId);
 
     /**
      * Crear un nuevo proyecto

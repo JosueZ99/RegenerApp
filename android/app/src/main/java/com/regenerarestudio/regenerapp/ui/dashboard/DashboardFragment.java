@@ -10,23 +10,33 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import com.google.android.material.card.MaterialCardView;
 import com.google.android.material.chip.Chip;
+import com.google.android.material.snackbar.Snackbar;
 import com.regenerarestudio.regenerapp.MainActivity;
 import com.regenerarestudio.regenerapp.R;
 import com.regenerarestudio.regenerapp.databinding.FragmentDashboardBinding;
+import com.regenerarestudio.regenerapp.data.models.Project;
+import com.regenerarestudio.regenerapp.data.responses.DashboardResponse;
 
 import java.text.NumberFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.Locale;
 
 /**
- * Fragment del Dashboard - Pantalla principal después de seleccionar proyecto
- * Path: android/app/src/main/java/com/regenerarestudio/regenerapp/ui/dashboard/DashboardFragment.java
+ * Fragment del Dashboard - Versión completa con todos los elementos financieros
+ * Muestra información detallada del proyecto seleccionado desde el backend
  */
 public class DashboardFragment extends Fragment {
+
+    private static final String TAG = "DashboardFragment";
 
     private FragmentDashboardBinding binding;
     private DashboardViewModel dashboardViewModel;
@@ -38,10 +48,17 @@ public class DashboardFragment extends Fragment {
     // Widgets del dashboard
     private MaterialCardView cardGoogleDrive;
     private MaterialCardView cardReports;
+    private SwipeRefreshLayout swipeRefreshLayout;
+
+    // Formatters
+    private final NumberFormat currencyFormatter = NumberFormat.getCurrencyInstance(new Locale("es", "EC"));
+    private final SimpleDateFormat inputDateFormatter = new SimpleDateFormat("yyyy-MM-dd", Locale.US);
+    private final SimpleDateFormat outputDateFormatter = new SimpleDateFormat("dd MMM yyyy", new Locale("es", "EC"));
 
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         binding = FragmentDashboardBinding.inflate(inflater, container, false);
+        android.util.Log.d(TAG, "onCreateView - Layout completo cargado");
         return binding.getRoot();
     }
 
@@ -51,11 +68,58 @@ public class DashboardFragment extends Fragment {
 
         dashboardViewModel = new ViewModelProvider(this).get(DashboardViewModel.class);
 
-        getProjectInfo();
         initializeViews();
+        getProjectInfo();
+        setupSwipeRefresh();
         setupClickListeners();
-        loadProjectData();
         observeViewModel();
+
+        // Cargar datos del proyecto
+        loadProjectData();
+    }
+
+    private void initializeViews() {
+        cardGoogleDrive = binding.cardGoogleDrive;
+        cardReports = binding.cardReports;
+        swipeRefreshLayout = binding.swipeRefreshLayout;
+
+        android.util.Log.d(TAG, "Views inicializadas - Layout completo");
+
+        // Establecer textos de carga iniciales
+        setLoadingTexts();
+    }
+
+    private void setLoadingTexts() {
+        // Información del proyecto
+        binding.tvProjectName.setText("Cargando proyecto...");
+        binding.tvProjectClient.setText("Cargando cliente...");
+        binding.tvStartDate.setText("--");
+        binding.tvEndDate.setText("--");
+        binding.chipProjectStatus.setText("Cargando...");
+
+        // Información financiera
+        binding.tvInitialBudget.setText("$0.00");
+        binding.tvTotalExpenses.setText("$0.00");
+        binding.tvRemainingBudget.setText("$0.00");
+        binding.tvBudgetPercentage.setText("0.0%");
+        binding.progressBarBudget.setProgress(0);
+
+        // Categorías
+        binding.tvConstructionBudget.setText("Cargando...");
+        binding.tvLightingBudget.setText("Cargando...");
+        binding.tvOthersBudget.setText("Cargando...");
+
+        // Estadísticas
+        binding.tvBudgetItemsCount.setText("0");
+        binding.tvExpensesCount.setText("0");
+        binding.tvCalculationsCount.setText("0");
+
+        // Ocultar elementos opcionales
+        binding.tvProjectLocation.setVisibility(View.GONE);
+        binding.tvProjectDescription.setVisibility(View.GONE);
+        binding.chipOverBudget.setVisibility(View.GONE);
+
+        android.util.Log.d(TAG, "Textos de carga establecidos");
     }
 
     private void getProjectInfo() {
@@ -63,155 +127,306 @@ public class DashboardFragment extends Fragment {
             MainActivity mainActivity = (MainActivity) getActivity();
             projectId = mainActivity.getSelectedProjectId();
             projectName = mainActivity.getSelectedProjectName();
+            android.util.Log.d(TAG, "Proyecto desde MainActivity: ID=" + projectId + ", Nombre=" + projectName);
         }
     }
 
-    private void initializeViews() {
-        cardGoogleDrive = binding.cardGoogleDrive;
-        cardReports = binding.cardReports;
+    private void setupSwipeRefresh() {
+        if (swipeRefreshLayout != null) {
+            swipeRefreshLayout.setOnRefreshListener(() -> {
+                android.util.Log.d(TAG, "SwipeRefresh activado");
+                refreshDashboardData();
+            });
+
+            // Configurar colores del refresh
+            swipeRefreshLayout.setColorSchemeResources(
+                    R.color.primary_color,
+                    R.color.primary_variant,
+                    android.R.color.holo_blue_bright
+            );
+        }
     }
 
     private void setupClickListeners() {
-        // Google Drive
         cardGoogleDrive.setOnClickListener(v -> openGoogleDrive());
-
-        // Reportes
         cardReports.setOnClickListener(v -> openReports());
     }
 
     private void loadProjectData() {
-        // Cargar datos del proyecto (por ahora simulados)
-        // TODO: En el futuro obtener desde API
-        loadProjectInfo();
-        loadFinancialSummary();
-        loadProjectPhases();
+        if (projectId > 0) {
+            android.util.Log.d(TAG, "Cargando datos para proyecto ID: " + projectId);
+            dashboardViewModel.loadDashboardData(projectId);
+        } else {
+            android.util.Log.e(TAG, "ID de proyecto inválido: " + projectId);
+            showError("Error: No hay proyecto seleccionado");
+        }
     }
 
-    private void loadProjectInfo() {
-        // Información básica del proyecto
-        binding.tvProjectName.setText(projectName);
-        binding.tvProjectClient.setText("Familia Rodríguez Pérez"); // TODO: Obtener desde API
-        binding.tvStartDate.setText("15 Ene 2025");
-        binding.tvEndDate.setText("30 Abr 2025");
+    private void observeViewModel() {
+        // Observar datos del proyecto
+        dashboardViewModel.getProjectData().observe(getViewLifecycleOwner(), project -> {
+            android.util.Log.d(TAG, "Observer: Datos de proyecto recibidos");
+            if (project != null) {
+                updateProjectInfo(project);
+            }
+        });
+
+        // Observar resumen financiero
+        dashboardViewModel.getFinancialSummary().observe(getViewLifecycleOwner(), financialSummary -> {
+            android.util.Log.d(TAG, "Observer: Resumen financiero recibido");
+            if (financialSummary != null) {
+                updateFinancialSummary(financialSummary);
+            }
+        });
+
+        // Observar datos completos del dashboard
+        dashboardViewModel.getDashboardData().observe(getViewLifecycleOwner(), dashboardData -> {
+            android.util.Log.d(TAG, "Observer: Datos completos del dashboard recibidos");
+            if (dashboardData != null) {
+                updateDashboardStatistics(dashboardData);
+            }
+        });
+
+        // Observar estado de carga
+        dashboardViewModel.getIsLoading().observe(getViewLifecycleOwner(), isLoading -> {
+            if (swipeRefreshLayout != null) {
+                swipeRefreshLayout.setRefreshing(isLoading);
+            }
+
+            if (binding.progressBar != null) {
+                binding.progressBar.setVisibility(isLoading ? View.VISIBLE : View.GONE);
+            }
+        });
+
+        // Observar errores
+        dashboardViewModel.getError().observe(getViewLifecycleOwner(), error -> {
+            if (error != null && !error.isEmpty()) {
+                android.util.Log.e(TAG, "Error observado: " + error);
+                showError(error);
+                dashboardViewModel.clearError();
+            }
+        });
+
+        // Observar estado de red
+        dashboardViewModel.getNetworkState().observe(getViewLifecycleOwner(), networkState -> {
+            if (networkState != null && networkState.hasNoNetwork()) {
+                showError("Sin conexión a internet");
+            }
+        });
+
+        android.util.Log.d(TAG, "Observers configurados para layout completo");
+    }
+
+    private void updateProjectInfo(Project project) {
+        if (project == null) return;
+
+        android.util.Log.d(TAG, "=== ACTUALIZANDO INFORMACIÓN DEL PROYECTO ===");
+        android.util.Log.d(TAG, "Proyecto: " + project.getName());
+        android.util.Log.d(TAG, "Cliente: " + project.getClient());
+        android.util.Log.d(TAG, "Ubicación: " + project.getLocation());
+        android.util.Log.d(TAG, "Descripción: " + project.getDescription());
+
+        // Información básica
+        binding.tvProjectName.setText(project.getName());
+        binding.tvProjectClient.setText(project.getClient());
+
+        // Ubicación
+        if (project.getLocation() != null && !project.getLocation().isEmpty()) {
+            binding.tvProjectLocation.setText(project.getLocation());
+            binding.tvProjectLocation.setVisibility(View.VISIBLE);
+        } else {
+            binding.tvProjectLocation.setVisibility(View.GONE);
+        }
+
+        // Descripción
+        if (project.getDescription() != null && !project.getDescription().isEmpty()) {
+            binding.tvProjectDescription.setText(project.getDescription());
+            binding.tvProjectDescription.setVisibility(View.VISIBLE);
+        } else {
+            binding.tvProjectDescription.setVisibility(View.GONE);
+        }
+
+        // Fechas
+        if (project.getStartDate() != null && !project.getStartDate().isEmpty()) {
+            String formattedStartDate = formatDateString(project.getStartDate());
+            binding.tvStartDate.setText(formattedStartDate);
+            android.util.Log.d(TAG, "Fecha inicio formateada: " + formattedStartDate);
+        }
+
+        if (project.getEndDate() != null && !project.getEndDate().isEmpty()) {
+            String formattedEndDate = formatDateString(project.getEndDate());
+            binding.tvEndDate.setText(formattedEndDate);
+            android.util.Log.d(TAG, "Fecha fin formateada: " + formattedEndDate);
+        }
 
         // Estado del proyecto
-        updateProjectStatus("diseño"); // TODO: Obtener desde API
+        updateProjectStatus(project.getCurrentPhase());
+
+        android.util.Log.d(TAG, "=== INFORMACIÓN DEL PROYECTO ACTUALIZADA ===");
     }
 
-    private void updateProjectStatus(String status) {
+    private void updateProjectStatus(String phase) {
+        if (phase == null) return;
+
         Chip statusChip = binding.chipProjectStatus;
+        String statusText;
+        int colorResource;
 
-        switch (status.toLowerCase()) {
-            case "diseño":
-                statusChip.setText("En Diseño");
-                statusChip.setChipBackgroundColorResource(R.color.status_design);
-                break;
-            case "compra":
-                statusChip.setText("En Compra");
-                statusChip.setChipBackgroundColorResource(R.color.status_purchase);
-                break;
-            case "instalacion":
-                statusChip.setText("En Instalación");
-                statusChip.setChipBackgroundColorResource(R.color.status_installation);
-                break;
-            case "completado":
-                statusChip.setText("Completado");
-                statusChip.setChipBackgroundColorResource(R.color.status_completed);
-                break;
-            default:
-                statusChip.setText("Estado Desconocido");
-                statusChip.setChipBackgroundColorResource(R.color.gray_500);
-                break;
-        }
-    }
-
-    private void loadFinancialSummary() {
-        // Datos financieros simulados
-        // TODO: En el futuro obtener desde API
-        double budgetInitial = 15750.00;
-        double expensesReal = 8240.00;
-        double balance = budgetInitial - expensesReal;
-
-        // Formatear números como moneda
-        NumberFormat currencyFormat = NumberFormat.getCurrencyInstance(new Locale("es", "EC"));
-
-        binding.tvBudgetInitial.setText(currencyFormat.format(budgetInitial));
-        binding.tvExpensesReal.setText(currencyFormat.format(expensesReal));
-
-        // Configurar color del balance según si es positivo o negativo
-        if (balance >= 0) {
-            binding.tvBalance.setText(currencyFormat.format(balance));
-            binding.tvBalance.setTextColor(getResources().getColor(R.color.financial_positive, null));
-        } else {
-            binding.tvBalance.setText("-" + currencyFormat.format(Math.abs(balance)));
-            binding.tvBalance.setTextColor(getResources().getColor(R.color.financial_negative, null));
-        }
-    }
-
-    private void loadProjectPhases() {
-        // Configurar fases según el estado del proyecto
-        // TODO: En el futuro obtener desde API
-
-        // Simulación: Proyecto en fase de compra
-        updatePhaseStatus("design", "completado");
-        updatePhaseStatus("purchase", "en_progreso");
-        updatePhaseStatus("installation", "pendiente");
-    }
-
-    private void updatePhaseStatus(String phase, String status) {
-        Chip chip;
-
-        switch (phase) {
+        switch (phase.toLowerCase()) {
             case "design":
-                chip = binding.chipPhaseDesign;
+                statusText = "En Diseño";
+                colorResource = android.R.color.holo_blue_light;
                 break;
             case "purchase":
-                chip = binding.chipPhasePurchase;
+                statusText = "En Compra";
+                colorResource = android.R.color.holo_orange_light;
                 break;
             case "installation":
-                chip = binding.chipPhaseInstallation;
+                statusText = "En Instalación";
+                colorResource = android.R.color.holo_purple;
+                break;
+            case "completed":
+                statusText = "Completado";
+                colorResource = android.R.color.holo_green_light;
                 break;
             default:
-                return;
+                statusText = "Sin definir";
+                colorResource = android.R.color.darker_gray;
+                break;
         }
 
-        switch (status) {
-            case "completado":
-                chip.setText("Completado");
-                chip.setChipBackgroundColorResource(R.color.success);
-                chip.setTextColor(getResources().getColor(R.color.white, null));
-                break;
-            case "en_progreso":
-                chip.setText("En Progreso");
-                chip.setChipBackgroundColorResource(R.color.warning);
-                chip.setTextColor(getResources().getColor(R.color.white, null));
-                break;
-            case "pendiente":
-                chip.setText("Pendiente");
-                chip.setChipBackgroundColorResource(R.color.gray_300);
-                chip.setTextColor(getResources().getColor(R.color.gray_600, null));
-                break;
+        statusChip.setText(statusText);
+        statusChip.setChipBackgroundColorResource(colorResource);
+
+        android.util.Log.d(TAG, "Estado actualizado a: " + statusText);
+    }
+
+    private void updateFinancialSummary(DashboardResponse.FinancialSummary financialSummary) {
+        if (financialSummary == null) return;
+
+        android.util.Log.d(TAG, "=== ACTUALIZANDO RESUMEN FINANCIERO ===");
+
+        // Obtener valores con null safety
+        Double totalBudget = financialSummary.getTotalBudget() != null ? financialSummary.getTotalBudget() : 0.0;
+        Double totalExpenses = financialSummary.getTotalExpenses() != null ? financialSummary.getTotalExpenses() : 0.0;
+        Double remainingBudget = financialSummary.getRemainingBudget() != null ? financialSummary.getRemainingBudget() : 0.0;
+        Double percentageUsed = financialSummary.getBudgetUtilizationPercentage() != null ? financialSummary.getBudgetUtilizationPercentage() : 0.0;
+
+        android.util.Log.d(TAG, "Presupuesto total: " + totalBudget);
+        android.util.Log.d(TAG, "Total gastado: " + totalExpenses);
+        android.util.Log.d(TAG, "Balance restante: " + remainingBudget);
+        android.util.Log.d(TAG, "Porcentaje usado: " + percentageUsed + "%");
+
+        // Actualizar valores principales
+        binding.tvInitialBudget.setText(currencyFormatter.format(totalBudget));
+        binding.tvTotalExpenses.setText(currencyFormatter.format(totalExpenses));
+        binding.tvRemainingBudget.setText(currencyFormatter.format(remainingBudget));
+        binding.tvBudgetPercentage.setText(String.format(Locale.getDefault(), "%.1f%%", percentageUsed));
+
+        // Actualizar colores según el estado del presupuesto
+        if (remainingBudget >= 0) {
+            binding.tvRemainingBudget.setTextColor(ContextCompat.getColor(requireContext(), android.R.color.holo_green_dark));
+        } else {
+            binding.tvRemainingBudget.setTextColor(ContextCompat.getColor(requireContext(), android.R.color.holo_red_dark));
+        }
+
+        // Actualizar barra de progreso
+        binding.progressBarBudget.setProgress(percentageUsed.intValue());
+
+        // Indicador de sobrecosto
+        Boolean isOverBudget = financialSummary.getIsOverBudget();
+        if (isOverBudget != null && isOverBudget) {
+            binding.chipOverBudget.setVisibility(View.VISIBLE);
+            android.util.Log.d(TAG, "ALERTA: Proyecto con sobrecosto");
+        } else {
+            binding.chipOverBudget.setVisibility(View.GONE);
+        }
+
+        // Actualizar categorías
+        updateCategoriesBudget(financialSummary);
+
+        android.util.Log.d(TAG, "=== RESUMEN FINANCIERO ACTUALIZADO ===");
+    }
+
+    private void updateCategoriesBudget(DashboardResponse.FinancialSummary financialSummary) {
+        if (financialSummary.getBudgetByCategory() != null) {
+            DashboardResponse.BudgetByCategory categories = financialSummary.getBudgetByCategory();
+
+            // Construcción
+            if (categories.getConstruction() != null) {
+                DashboardResponse.CategoryBudget construction = categories.getConstruction();
+                String constructionText = String.format(Locale.getDefault(),
+                        "Presupuesto: %s | Gastado: %s",
+                        currencyFormatter.format(construction.getBudgeted() != null ? construction.getBudgeted() : 0.0),
+                        currencyFormatter.format(construction.getSpent() != null ? construction.getSpent() : 0.0)
+                );
+                binding.tvConstructionBudget.setText(constructionText);
+            }
+
+            // Iluminación
+            if (categories.getLighting() != null) {
+                DashboardResponse.CategoryBudget lighting = categories.getLighting();
+                String lightingText = String.format(Locale.getDefault(),
+                        "Presupuesto: %s | Gastado: %s",
+                        currencyFormatter.format(lighting.getBudgeted() != null ? lighting.getBudgeted() : 0.0),
+                        currencyFormatter.format(lighting.getSpent() != null ? lighting.getSpent() : 0.0)
+                );
+                binding.tvLightingBudget.setText(lightingText);
+            }
+
+            // Otros
+            if (categories.getOthers() != null) {
+                DashboardResponse.CategoryBudget others = categories.getOthers();
+                String othersText = String.format(Locale.getDefault(),
+                        "Presupuesto: %s | Gastado: %s",
+                        currencyFormatter.format(others.getBudgeted() != null ? others.getBudgeted() : 0.0),
+                        currencyFormatter.format(others.getSpent() != null ? others.getSpent() : 0.0)
+                );
+                binding.tvOthersBudget.setText(othersText);
+            }
+        }
+    }
+
+    private void updateDashboardStatistics(DashboardResponse dashboardData) {
+        if (dashboardData.getStatistics() != null) {
+            DashboardResponse.Statistics stats = dashboardData.getStatistics();
+
+            android.util.Log.d(TAG, "=== ACTUALIZANDO ESTADÍSTICAS ===");
+            android.util.Log.d(TAG, "Items presupuestados: " + stats.getBudgetItemsCount());
+            android.util.Log.d(TAG, "Gastos realizados: " + stats.getExpensesCount());
+            android.util.Log.d(TAG, "Cálculos realizados: " + stats.getCalculationsCount());
+
+            // Actualizar contadores
+            binding.tvBudgetItemsCount.setText(String.valueOf(stats.getBudgetItemsCount() != null ? stats.getBudgetItemsCount() : 0));
+            binding.tvExpensesCount.setText(String.valueOf(stats.getExpensesCount() != null ? stats.getExpensesCount() : 0));
+            binding.tvCalculationsCount.setText(String.valueOf(stats.getCalculationsCount() != null ? stats.getCalculationsCount() : 0));
+
+            android.util.Log.d(TAG, "=== ESTADÍSTICAS ACTUALIZADAS ===");
+        }
+    }
+
+    private String formatDateString(String dateString) {
+        if (dateString == null || dateString.isEmpty()) {
+            return "Fecha no definida";
+        }
+
+        try {
+            Date date = inputDateFormatter.parse(dateString);
+            return outputDateFormatter.format(date);
+        } catch (ParseException e) {
+            android.util.Log.w(TAG, "Error parseando fecha: " + dateString, e);
+            return dateString;
         }
     }
 
     private void openGoogleDrive() {
-        // URL de ejemplo para Google Drive del proyecto
-        // TODO: En el futuro obtener desde API la URL real configurada para el proyecto
-        String driveUrl = "https://drive.google.com/drive/folders/ejemplo-proyecto-" + projectId;
-
         try {
-            Intent intent = new Intent(Intent.ACTION_VIEW);
-            intent.setData(Uri.parse(driveUrl));
-
-            // Verificar si hay una app que pueda manejar el intent
-            if (intent.resolveActivity(requireContext().getPackageManager()) != null) {
+            Project project = dashboardViewModel.getProjectData().getValue();
+            if (project != null && project.getDriveFolderUrl() != null && !project.getDriveFolderUrl().isEmpty()) {
+                Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(project.getDriveFolderUrl()));
                 startActivity(intent);
             } else {
-                // Si no hay app, abrir en navegador web
-                Intent webIntent = new Intent(Intent.ACTION_VIEW);
-                webIntent.setData(Uri.parse("https://drive.google.com"));
-                startActivity(webIntent);
-                Toast.makeText(requireContext(), "Abriendo Google Drive en navegador", Toast.LENGTH_SHORT).show();
+                Toast.makeText(requireContext(), "URL de Google Drive no configurada para este proyecto", Toast.LENGTH_SHORT).show();
             }
         } catch (Exception e) {
             Toast.makeText(requireContext(), "Error al abrir Google Drive", Toast.LENGTH_SHORT).show();
@@ -219,54 +434,44 @@ public class DashboardFragment extends Fragment {
     }
 
     private void openReports() {
-        // Navegar a la sección de reportes o exportación
         Toast.makeText(requireContext(), "Función de reportes - Próximamente", Toast.LENGTH_SHORT).show();
-
-        // TODO: En el futuro implementar navegación a fragment de reportes
-        // Navigation.findNavController(requireView()).navigate(R.id.nav_reportes);
     }
 
-    private void observeViewModel() {
-        // TODO: Implementar observadores cuando se conecte con el backend
-
-        // Observar cambios en datos del proyecto
-        // dashboardViewModel.getProjectData().observe(getViewLifecycleOwner(), projectData -> {
-        //     updateProjectInfo(projectData);
-        // });
-
-        // Observar cambios en datos financieros
-        // dashboardViewModel.getFinancialData().observe(getViewLifecycleOwner(), financialData -> {
-        //     updateFinancialSummary(financialData);
-        // });
-
-        // Observar cambios en fases del proyecto
-        // dashboardViewModel.getProjectPhases().observe(getViewLifecycleOwner(), phases -> {
-        //     updateProjectPhases(phases);
-        // });
-
-        // Observar errores
-        // dashboardViewModel.getError().observe(getViewLifecycleOwner(), error -> {
-        //     if (error != null && !error.isEmpty()) {
-        //         Toast.makeText(requireContext(), error, Toast.LENGTH_LONG).show();
-        //     }
-        // });
+    private void refreshDashboardData() {
+        if (dashboardViewModel != null) {
+            android.util.Log.d(TAG, "Refrescando datos del dashboard...");
+            dashboardViewModel.refreshDashboard();
+        }
     }
 
-    // Método público para actualizar datos desde la MainActivity si es necesario
+    private void showError(String message) {
+        android.util.Log.e(TAG, "Error en dashboard: " + message);
+        if (getView() != null) {
+            Snackbar.make(getView(), message, Snackbar.LENGTH_LONG)
+                    .setAction("Reintentar", v -> loadProjectData())
+                    .show();
+        } else {
+            Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show();
+        }
+    }
+
     public void refreshDashboard() {
-        loadProjectData();
+        refreshDashboardData();
     }
 
     @Override
     public void onResume() {
         super.onResume();
-        // Actualizar datos cada vez que se regresa al dashboard
-        refreshDashboard();
+        android.util.Log.d(TAG, "onResume - Fragment visible");
+        if (dashboardViewModel != null && dashboardViewModel.hasData()) {
+            refreshDashboardData();
+        }
     }
 
     @Override
     public void onDestroyView() {
         super.onDestroyView();
+        android.util.Log.d(TAG, "onDestroyView - Limpiando binding");
         binding = null;
     }
 }

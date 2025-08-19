@@ -3,25 +3,22 @@ package com.regenerarestudio.regenerapp.data.responses;
 import com.google.gson.annotations.SerializedName;
 import com.regenerarestudio.regenerapp.data.models.Project;
 import java.util.List;
+import java.util.Map;
 
 /**
- * Respuesta del dashboard con datos del proyecto
+ * Respuesta del dashboard que coincide exactamente con el backend Django
+ * GET /api/projects/{id}/dashboard/
  */
 public class DashboardResponse {
+
     @SerializedName("project")
     private Project project;
 
     @SerializedName("financial_summary")
     private FinancialSummary financialSummary;
 
-    @SerializedName("phase_progress")
-    private PhaseProgress phaseProgress;
-
-    @SerializedName("recent_activities")
-    private List<Activity> recentActivities;
-
-    @SerializedName("notifications")
-    private List<Notification> notifications;
+    @SerializedName("statistics")
+    private Statistics statistics;
 
     // Constructor vacío
     public DashboardResponse() {}
@@ -33,222 +30,207 @@ public class DashboardResponse {
     public FinancialSummary getFinancialSummary() { return financialSummary; }
     public void setFinancialSummary(FinancialSummary financialSummary) { this.financialSummary = financialSummary; }
 
-    public PhaseProgress getPhaseProgress() { return phaseProgress; }
-    public void setPhaseProgress(PhaseProgress phaseProgress) { this.phaseProgress = phaseProgress; }
-
-    public List<Activity> getRecentActivities() { return recentActivities; }
-    public void setRecentActivities(List<Activity> recentActivities) { this.recentActivities = recentActivities; }
-
-    public List<Notification> getNotifications() { return notifications; }
-    public void setNotifications(List<Notification> notifications) { this.notifications = notifications; }
+    public Statistics getStatistics() { return statistics; }
+    public void setStatistics(Statistics statistics) { this.statistics = statistics; }
 
     /**
-     * Resumen financiero del proyecto
+     * Resumen financiero del proyecto - Coincide con backend Django
      */
     public static class FinancialSummary {
-        @SerializedName("initial_budget")
-        private Double initialBudget;
+        @SerializedName("total_budget")
+        private Double totalBudget;
 
         @SerializedName("total_expenses")
         private Double totalExpenses;
 
+        @SerializedName("balance")
+        private Double balance;
+
+        @SerializedName("budget_utilization_percentage")
+        private Double budgetUtilizationPercentage;
+
+        @SerializedName("is_over_budget")
+        private Boolean isOverBudget;
+
         @SerializedName("remaining_budget")
         private Double remainingBudget;
 
-        @SerializedName("budget_percentage_used")
-        private Double budgetPercentageUsed;
-
-        @SerializedName("total_items_budgeted")
-        private Integer totalItemsBudgeted;
-
-        @SerializedName("total_items_purchased")
-        private Integer totalItemsPurchased;
+        @SerializedName("budget_by_category")
+        private BudgetByCategory budgetByCategory;
 
         // Constructor vacío
         public FinancialSummary() {}
 
         // Getters y Setters
-        public Double getInitialBudget() { return initialBudget; }
-        public void setInitialBudget(Double initialBudget) { this.initialBudget = initialBudget; }
+        public Double getTotalBudget() { return totalBudget; }
+        public void setTotalBudget(Double totalBudget) { this.totalBudget = totalBudget; }
 
         public Double getTotalExpenses() { return totalExpenses; }
         public void setTotalExpenses(Double totalExpenses) { this.totalExpenses = totalExpenses; }
 
+        public Double getBalance() { return balance; }
+        public void setBalance(Double balance) { this.balance = balance; }
+
+        public Double getBudgetUtilizationPercentage() { return budgetUtilizationPercentage; }
+        public void setBudgetUtilizationPercentage(Double budgetUtilizationPercentage) {
+            this.budgetUtilizationPercentage = budgetUtilizationPercentage;
+        }
+
+        public Boolean getIsOverBudget() { return isOverBudget; }
+        public void setIsOverBudget(Boolean isOverBudget) { this.isOverBudget = isOverBudget; }
+
         public Double getRemainingBudget() { return remainingBudget; }
         public void setRemainingBudget(Double remainingBudget) { this.remainingBudget = remainingBudget; }
 
-        public Double getBudgetPercentageUsed() { return budgetPercentageUsed; }
-        public void setBudgetPercentageUsed(Double budgetPercentageUsed) { this.budgetPercentageUsed = budgetPercentageUsed; }
-
-        public Integer getTotalItemsBudgeted() { return totalItemsBudgeted; }
-        public void setTotalItemsBudgeted(Integer totalItemsBudgeted) { this.totalItemsBudgeted = totalItemsBudgeted; }
-
-        public Integer getTotalItemsPurchased() { return totalItemsPurchased; }
-        public void setTotalItemsPurchased(Integer totalItemsPurchased) { this.totalItemsPurchased = totalItemsPurchased; }
-
-        public String getFormattedInitialBudget() {
-            return initialBudget != null ? String.format("$%.2f", initialBudget) : "$0.00";
+        public BudgetByCategory getBudgetByCategory() { return budgetByCategory; }
+        public void setBudgetByCategory(BudgetByCategory budgetByCategory) {
+            this.budgetByCategory = budgetByCategory;
         }
 
-        public String getFormattedTotalExpenses() {
-            return totalExpenses != null ? String.format("$%.2f", totalExpenses) : "$0.00";
-        }
-
-        public String getFormattedRemainingBudget() {
-            return remainingBudget != null ? String.format("$%.2f", remainingBudget) : "$0.00";
-        }
-
-        public boolean isOverBudget() {
-            return remainingBudget != null && remainingBudget < 0;
-        }
+        // Métodos de utilidad
+        public Double getBudgetPercentageUsed() { return budgetUtilizationPercentage; }
+        public Double getInitialBudget() { return totalBudget; }
     }
 
     /**
-     * Progreso de las fases del proyecto
+     * Presupuesto por categorías
      */
-    public static class PhaseProgress {
-        @SerializedName("current_phase")
-        private String currentPhase;
+    public static class BudgetByCategory {
+        @SerializedName("construction")
+        private CategoryBudget construction;
 
-        @SerializedName("design_completed")
-        private Boolean designCompleted;
+        @SerializedName("lighting")
+        private CategoryBudget lighting;
 
-        @SerializedName("purchase_completed")
-        private Boolean purchaseCompleted;
-
-        @SerializedName("installation_completed")
-        private Boolean installationCompleted;
-
-        @SerializedName("overall_progress_percentage")
-        private Double overallProgressPercentage;
+        @SerializedName("others")
+        private CategoryBudget others;
 
         // Constructor vacío
-        public PhaseProgress() {}
+        public BudgetByCategory() {}
 
         // Getters y Setters
-        public String getCurrentPhase() { return currentPhase; }
-        public void setCurrentPhase(String currentPhase) { this.currentPhase = currentPhase; }
+        public CategoryBudget getConstruction() { return construction; }
+        public void setConstruction(CategoryBudget construction) { this.construction = construction; }
 
-        public Boolean getDesignCompleted() { return designCompleted; }
-        public void setDesignCompleted(Boolean designCompleted) { this.designCompleted = designCompleted; }
+        public CategoryBudget getLighting() { return lighting; }
+        public void setLighting(CategoryBudget lighting) { this.lighting = lighting; }
 
-        public Boolean getPurchaseCompleted() { return purchaseCompleted; }
-        public void setPurchaseCompleted(Boolean purchaseCompleted) { this.purchaseCompleted = purchaseCompleted; }
+        public CategoryBudget getOthers() { return others; }
+        public void setOthers(CategoryBudget others) { this.others = others; }
+    }
 
-        public Boolean getInstallationCompleted() { return installationCompleted; }
-        public void setInstallationCompleted(Boolean installationCompleted) { this.installationCompleted = installationCompleted; }
+    /**
+     * Presupuesto de una categoría específica
+     */
+    public static class CategoryBudget {
+        @SerializedName("budgeted")
+        private Double budgeted;
 
-        public Double getOverallProgressPercentage() { return overallProgressPercentage; }
-        public void setOverallProgressPercentage(Double overallProgressPercentage) { this.overallProgressPercentage = overallProgressPercentage; }
+        @SerializedName("spent")
+        private Double spent;
 
-        public String getCurrentPhaseDisplay() {
-            if (currentPhase == null) return "No definida";
+        // Constructor vacío
+        public CategoryBudget() {}
 
-            switch (currentPhase) {
-                case "design": return "Diseño";
-                case "purchase": return "Compra";
-                case "installation": return "Instalación";
-                case "completed": return "Completado";
-                default: return "Desconocida";
+        // Getters y Setters
+        public Double getBudgeted() { return budgeted; }
+        public void setBudgeted(Double budgeted) { this.budgeted = budgeted; }
+
+        public Double getSpent() { return spent; }
+        public void setSpent(Double spent) { this.spent = spent; }
+
+        // Métodos de utilidad
+        public Double getRemaining() {
+            if (budgeted != null && spent != null) {
+                return budgeted - spent;
             }
+            return 0.0;
         }
 
-        public int getProgressAsInt() {
-            return overallProgressPercentage != null ? overallProgressPercentage.intValue() : 0;
+        public Double getPercentageUsed() {
+            if (budgeted != null && spent != null && budgeted > 0) {
+                return (spent / budgeted) * 100;
+            }
+            return 0.0;
         }
     }
 
     /**
-     * Actividad reciente del proyecto
+     * Estadísticas adicionales del proyecto
      */
-    public static class Activity {
-        @SerializedName("id")
-        private Long id;
+    public static class Statistics {
+        @SerializedName("budget_items_count")
+        private Integer budgetItemsCount;
 
-        @SerializedName("type")
-        private String type;
+        @SerializedName("expenses_count")
+        private Integer expensesCount;
 
+        @SerializedName("calculations_count")
+        private Integer calculationsCount;
+
+        @SerializedName("recent_expenses")
+        private List<RecentExpense> recentExpenses;
+
+        // Constructor vacío
+        public Statistics() {}
+
+        // Getters y Setters
+        public Integer getBudgetItemsCount() { return budgetItemsCount; }
+        public void setBudgetItemsCount(Integer budgetItemsCount) { this.budgetItemsCount = budgetItemsCount; }
+
+        public Integer getExpensesCount() { return expensesCount; }
+        public void setExpensesCount(Integer expensesCount) { this.expensesCount = expensesCount; }
+
+        public Integer getCalculationsCount() { return calculationsCount; }
+        public void setCalculationsCount(Integer calculationsCount) { this.calculationsCount = calculationsCount; }
+
+        public List<RecentExpense> getRecentExpenses() { return recentExpenses; }
+        public void setRecentExpenses(List<RecentExpense> recentExpenses) { this.recentExpenses = recentExpenses; }
+    }
+
+    /**
+     * Gasto reciente para mostrar en dashboard
+     */
+    public static class RecentExpense {
         @SerializedName("description")
         private String description;
 
-        @SerializedName("timestamp")
-        private String timestamp;
+        @SerializedName("total_price")
+        private Double totalPrice;
 
-        @SerializedName("icon")
-        private String icon;
+        @SerializedName("purchase_date")
+        private String purchaseDate;
+
+        @SerializedName("category")
+        private String category;
 
         // Constructor vacío
-        public Activity() {}
+        public RecentExpense() {}
 
         // Getters y Setters
-        public Long getId() { return id; }
-        public void setId(Long id) { this.id = id; }
-
-        public String getType() { return type; }
-        public void setType(String type) { this.type = type; }
-
         public String getDescription() { return description; }
         public void setDescription(String description) { this.description = description; }
 
-        public String getTimestamp() { return timestamp; }
-        public void setTimestamp(String timestamp) { this.timestamp = timestamp; }
+        public Double getTotalPrice() { return totalPrice; }
+        public void setTotalPrice(Double totalPrice) { this.totalPrice = totalPrice; }
 
-        public String getIcon() { return icon; }
-        public void setIcon(String icon) { this.icon = icon; }
+        public String getPurchaseDate() { return purchaseDate; }
+        public void setPurchaseDate(String purchaseDate) { this.purchaseDate = purchaseDate; }
+
+        public String getCategory() { return category; }
+        public void setCategory(String category) { this.category = category; }
     }
 
-    /**
-     * Notificación para el proyecto
-     */
-    public static class Notification {
-        @SerializedName("id")
-        private Long id;
+    // Métodos de utilidad para toda la respuesta
+    public boolean hasFinancialData() {
+        return financialSummary != null;
+    }
 
-        @SerializedName("type")
-        private String type;
+    public boolean hasStatistics() {
+        return statistics != null;
+    }
 
-        @SerializedName("title")
-        private String title;
-
-        @SerializedName("message")
-        private String message;
-
-        @SerializedName("priority")
-        private String priority;
-
-        @SerializedName("is_read")
-        private Boolean isRead;
-
-        @SerializedName("created_at")
-        private String createdAt;
-
-        // Constructor vacío
-        public Notification() {}
-
-        // Getters y Setters
-        public Long getId() { return id; }
-        public void setId(Long id) { this.id = id; }
-
-        public String getType() { return type; }
-        public void setType(String type) { this.type = type; }
-
-        public String getTitle() { return title; }
-        public void setTitle(String title) { this.title = title; }
-
-        public String getMessage() { return message; }
-        public void setMessage(String message) { this.message = message; }
-
-        public String getPriority() { return priority; }
-        public void setPriority(String priority) { this.priority = priority; }
-
-        public Boolean getIsRead() { return isRead; }
-        public void setIsRead(Boolean isRead) { this.isRead = isRead; }
-
-        public String getCreatedAt() { return createdAt; }
-        public void setCreatedAt(String createdAt) { this.createdAt = createdAt; }
-
-        public boolean isHighPriority() {
-            return "high".equals(priority) || "urgent".equals(priority);
-        }
+    public boolean isValidResponse() {
+        return project != null;
     }
 }
