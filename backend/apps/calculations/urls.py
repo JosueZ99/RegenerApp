@@ -12,11 +12,11 @@ urlpatterns = [
     # Rutas del router básico
     path('', include(router.urls)),
     
-    # Rutas específicas para calculadoras (que coinciden con el frontend Android)
+    # Rutas específicas para calculadoras - CORREGIDAS
     path('calculate/paint/', CalculationViewSet.as_view({'post': 'calculate_paint'}), name='calculate-paint'),
     path('calculate/gypsum/', CalculationViewSet.as_view({'post': 'calculate_gypsum'}), name='calculate-gypsum'),
     path('calculate/empaste/', CalculationViewSet.as_view({'post': 'calculate_empaste'}), name='calculate-empaste'),
-    path('calculate/led/', CalculationViewSet.as_view({'post': 'calculate_led'}), name='calculate-led'),
+    path('calculate/led/', CalculationViewSet.as_view({'post': 'calculate_led_strip'}), name='calculate-led'),
     path('calculate/profiles/', CalculationViewSet.as_view({'post': 'calculate_profiles'}), name='calculate-profiles'),
-    path('calculate/cables/', CalculationViewSet.as_view({'post': 'calculate_cables'}), name='calculate-cables'),
+    path('calculate/cables/', CalculationViewSet.as_view({'post': 'calculate_cable'}), name='calculate-cables'),
 ]

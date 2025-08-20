@@ -159,7 +159,7 @@ class CalculationViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['post'])
     def calculate_gypsum(self, request):
         """
-        Calculadora de gypsum
+        Calculadora de gypsum - CORREGIDA
         POST /api/calculations/calculate_gypsum/
         """
         serializer = GypsumCalculationRequestSerializer(data=request.data)
@@ -168,23 +168,22 @@ class CalculationViewSet(viewsets.ModelViewSet):
         
         data = serializer.validated_data
         
-        # Cálculos de gypsum
-        area = data['area_to_cover']
-        thickness = data['thickness']
+        # ===== CONVERSIÓN A FLOAT PARA EVITAR ERRORES DE TIPO =====
+        area = float(data['area_to_cover'])
+        thickness = float(data['thickness'])
         
-        # Dimensiones estándar de plancha de gypsum (1.22m x 2.44m = 2.9768 m²)
-        sheet_area = Decimal('2.9768')
+        # Cálculos de gypsum (plancha estándar: 1.22m x 2.44m = 2.98 m²)
+        sheet_area = 1.22 * 2.44  # m²
+        sheets_base = area / sheet_area
         
-        # Planchas necesarias (con 10% de desperdicio)
-        waste_factor = Decimal('0.10')
-        sheets_base = math.ceil(area / sheet_area)
+        # Factor de desperdicio
+        waste_factor = 0.10  # 10% de desperdicio
         sheets_needed = math.ceil(sheets_base * (1 + waste_factor))
         
-        # Metros lineales de perfil (perímetro + estructuras internas)
-        # Estimación: perímetro + 1 perfil cada 60cm
-        perimeter_estimate = 2 * math.sqrt(area * 2)  # Estimación basada en área
-        internal_profiles = area / Decimal('0.6')  # 1 perfil cada 60cm
-        linear_meters_profile = perimeter_estimate + float(internal_profiles)
+        # Metros lineales de perfil (estimación: perímetro + refuerzos internos)
+        perimeter_estimate = 2 * math.sqrt(area)  # Estimación aproximada del perímetro
+        internal_reinforcement = area * 0.5  # 0.5m de perfil por m² de área
+        linear_meters_profile = perimeter_estimate + internal_reinforcement
         
         # Buscar material sugerido
         material = None
@@ -194,7 +193,7 @@ class CalculationViewSet(viewsets.ModelViewSet):
             try:
                 material = Material.objects.get(id=data['material_id'])
                 if material.reference_price:
-                    estimated_cost = sheets_needed * material.reference_price
+                    estimated_cost = sheets_needed * float(material.reference_price)
             except Material.DoesNotExist:
                 pass
         
@@ -206,13 +205,13 @@ class CalculationViewSet(viewsets.ModelViewSet):
             calculation_type=calculation_type,
             material=material,
             input_data=dict(data),
-            calculated_quantity=sheets_needed,
+            calculated_quantity=Decimal(str(sheets_needed)),
             unit='planchas',
-            estimated_cost=estimated_cost,
+            estimated_cost=Decimal(str(estimated_cost)) if estimated_cost else None,
             detailed_results={
-                'sheet_area': float(sheet_area),
+                'sheet_area': sheet_area,
                 'sheets_base': sheets_base,
-                'waste_factor_applied': float(waste_factor),
+                'waste_factor_applied': waste_factor,
                 'linear_meters_profile': linear_meters_profile
             }
         )
@@ -220,8 +219,8 @@ class CalculationViewSet(viewsets.ModelViewSet):
         # Crear detalles específicos de gypsum
         gypsum_details = GypsumCalculation.objects.create(
             calculation=calculation,
-            area_to_cover=area,
-            thickness=thickness,
+            area_to_cover=Decimal(str(area)),
+            thickness=Decimal(str(thickness)),
             gypsum_type=data['gypsum_type'],
             sheets_needed=sheets_needed,
             linear_meters_profile=Decimal(str(linear_meters_profile))
@@ -232,11 +231,11 @@ class CalculationViewSet(viewsets.ModelViewSet):
             'calculation_type': 'gypsum',
             'calculated_quantity': sheets_needed,
             'unit': 'planchas',
-            'estimated_cost': float(estimated_cost) if estimated_cost else None,
+            'estimated_cost': estimated_cost,
             'detailed_results': calculation.detailed_results,
             'specific_details': {
-                'area_to_cover': float(area),
-                'thickness': float(thickness),
+                'area_to_cover': area,
+                'thickness': thickness,
                 'gypsum_type': data['gypsum_type'],
                 'linear_meters_profile': linear_meters_profile
             },
@@ -246,7 +245,7 @@ class CalculationViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['post'])
     def calculate_led_strip(self, request):
         """
-        Calculadora de cintas LED
+        Calculadora de cintas LED - COMPLETAMENTE CORREGIDA
         POST /api/calculations/calculate_led_strip/
         """
         serializer = LEDStripCalculationRequestSerializer(data=request.data)
@@ -255,24 +254,30 @@ class CalculationViewSet(viewsets.ModelViewSet):
         
         data = serializer.validated_data
         
-        # Cálculos de cinta LED
-        length = data['total_length']
-        power_per_meter = data['power_per_meter']
-        meters_per_roll = data['meters_per_roll']
+        # ===== CONVERSIÓN EXPLÍCITA A FLOAT PARA EVITAR ERRORES DE TIPO =====
+        length = float(data['total_length'])
+        power_per_meter = float(data['power_per_meter'])
+        meters_per_roll = float(data['meters_per_roll'])
         
-        # Potencia total
+        print(f"DEBUG LED - length: {length} (type: {type(length)})")
+        print(f"DEBUG LED - power_per_meter: {power_per_meter} (type: {type(power_per_meter)})")
+        print(f"DEBUG LED - meters_per_roll: {meters_per_roll} (type: {type(meters_per_roll)})")
+        
+        # Cálculos básicos
         total_power = length * power_per_meter
         
         # Rollos necesarios
         rolls_needed = math.ceil(length / meters_per_roll)
         
         # Drivers necesarios (asumiendo 60W por driver)
-        watts_per_driver = 60
+        watts_per_driver = 60.0
         drivers_needed = math.ceil(total_power / watts_per_driver)
         
         # Factor de seguridad para drivers (no cargar al 100%)
         safety_factor = 0.8
         drivers_with_safety = math.ceil(total_power / (watts_per_driver * safety_factor))
+        
+        print(f"DEBUG LED - Cálculos: total_power={total_power}, rolls_needed={rolls_needed}, drivers_with_safety={drivers_with_safety}")
         
         # Buscar material sugerido
         material = None
@@ -282,7 +287,7 @@ class CalculationViewSet(viewsets.ModelViewSet):
             try:
                 material = Material.objects.get(id=data['material_id'])
                 if material.reference_price:
-                    estimated_cost = rolls_needed * material.reference_price
+                    estimated_cost = rolls_needed * float(material.reference_price)
             except Material.DoesNotExist:
                 pass
         
@@ -294,11 +299,11 @@ class CalculationViewSet(viewsets.ModelViewSet):
             calculation_type=calculation_type,
             material=material,
             input_data=dict(data),
-            calculated_quantity=length,
+            calculated_quantity=Decimal(str(length)),  # Convertir a Decimal para BD
             unit='metros',
-            estimated_cost=estimated_cost,
+            estimated_cost=Decimal(str(estimated_cost)) if estimated_cost else None,
             detailed_results={
-                'total_power': float(total_power),
+                'total_power': total_power,
                 'rolls_needed': rolls_needed,
                 'drivers_basic': drivers_needed,
                 'drivers_with_safety': drivers_with_safety,
@@ -309,31 +314,34 @@ class CalculationViewSet(viewsets.ModelViewSet):
         # Crear detalles específicos de LED
         led_details = LEDStripCalculation.objects.create(
             calculation=calculation,
-            total_length=length,
-            power_per_meter=power_per_meter,
+            total_length=Decimal(str(length)),
+            power_per_meter=Decimal(str(power_per_meter)),
             voltage=data['voltage'],
             strip_type=data['strip_type'],
-            total_power=total_power,
+            total_power=Decimal(str(total_power)),
             drivers_needed=drivers_with_safety,
-            meters_per_roll=meters_per_roll,
+            meters_per_roll=Decimal(str(meters_per_roll)),
             rolls_needed=rolls_needed
         )
+        
+        print(f"DEBUG LED - Calculation created with ID: {calculation.id}")
         
         return Response({
             'calculation_id': calculation.id,
             'calculation_type': 'led_strip',
-            'calculated_quantity': float(length),
+            'calculated_quantity': length,
             'unit': 'metros',
-            'estimated_cost': float(estimated_cost) if estimated_cost else None,
+            'estimated_cost': estimated_cost,
             'detailed_results': calculation.detailed_results,
             'specific_details': {
-                'total_length': float(length),
-                'power_per_meter': float(power_per_meter),
+                'total_length': length,
+                'power_per_meter': power_per_meter,
                 'voltage': data['voltage'],
                 'strip_type': data['strip_type'],
-                'total_power': float(total_power),
+                'total_power': total_power,
                 'drivers_needed': drivers_with_safety,
-                'rolls_needed': rolls_needed
+                'rolls_needed': rolls_needed,
+                'meters_per_roll': meters_per_roll
             },
             'material_suggestions': self._get_material_suggestions('lighting', 'led')
         })
@@ -341,7 +349,7 @@ class CalculationViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['post'])
     def calculate_cable(self, request):
         """
-        Calculadora de cables
+        Calculadora de cables - CORREGIDA
         POST /api/calculations/calculate_cable/
         """
         serializer = CableCalculationRequestSerializer(data=request.data)
@@ -350,12 +358,12 @@ class CalculationViewSet(viewsets.ModelViewSet):
         
         data = serializer.validated_data
         
-        # Cálculos de cable
-        length = data['total_length']
-        meters_per_roll = data['meters_per_roll']
+        # ===== CONVERSIÓN A FLOAT PARA EVITAR ERRORES DE TIPO =====
+        length = float(data['total_length'])
+        meters_per_roll = float(data['meters_per_roll'])
         
         # Factor de seguridad para cables (10% extra)
-        safety_factor = Decimal('0.10')
+        safety_factor = 0.10
         length_with_safety = length * (1 + safety_factor)
         
         # Rollos necesarios
@@ -369,7 +377,7 @@ class CalculationViewSet(viewsets.ModelViewSet):
             try:
                 material = Material.objects.get(id=data['material_id'])
                 if material.reference_price:
-                    estimated_cost = rolls_needed * material.reference_price
+                    estimated_cost = rolls_needed * float(material.reference_price)
             except Material.DoesNotExist:
                 pass
         
@@ -381,174 +389,73 @@ class CalculationViewSet(viewsets.ModelViewSet):
             calculation_type=calculation_type,
             material=material,
             input_data=dict(data),
-            calculated_quantity=length_with_safety,
+            calculated_quantity=Decimal(str(length_with_safety)),
             unit='metros',
-            estimated_cost=estimated_cost,
+            estimated_cost=Decimal(str(estimated_cost)) if estimated_cost else None,
             detailed_results={
-                'base_length': float(length),
-                'safety_factor_applied': float(safety_factor),
+                'base_length': length,
+                'safety_factor_applied': safety_factor,
                 'rolls_needed': rolls_needed,
-                'total_meters_purchased': rolls_needed * float(meters_per_roll)
+                'total_meters_purchased': rolls_needed * meters_per_roll
             }
         )
         
         # Crear detalles específicos de cable
         cable_details = CableCalculation.objects.create(
             calculation=calculation,
-            total_length=length_with_safety,
+            total_length=Decimal(str(length_with_safety)),
             wire_gauge=data['wire_gauge'],
             cable_type=data['cable_type'],
             installation_type=data['installation_type'],
             rolls_needed=rolls_needed,
-            meters_per_roll=meters_per_roll
+            meters_per_roll=Decimal(str(meters_per_roll))
         )
         
         return Response({
             'calculation_id': calculation.id,
             'calculation_type': 'cable',
-            'calculated_quantity': float(length_with_safety),
+            'calculated_quantity': length_with_safety,
             'unit': 'metros',
-            'estimated_cost': float(estimated_cost) if estimated_cost else None,
+            'estimated_cost': estimated_cost,
             'detailed_results': calculation.detailed_results,
             'specific_details': {
-                'total_length': float(length_with_safety),
+                'total_length': length_with_safety,
                 'wire_gauge': data['wire_gauge'],
                 'cable_type': data['cable_type'],
                 'installation_type': data['installation_type'],
                 'rolls_needed': rolls_needed,
-                'meters_per_roll': float(meters_per_roll)
+                'meters_per_roll': meters_per_roll
             },
             'material_suggestions': self._get_material_suggestions('electrical', 'cable')
         })
-    
-    @action(detail=False, methods=['post'])
-    def calculate_led(self, request):
-        """
-        Calculadora de cintas LED (alias para calculate_led_strip)
-        POST /api/calculations/calculate_led/
-        """
-        # Reutilizar la lógica del método calculate_led_strip existente
-        return self.calculate_led_strip(request)
 
-    @action(detail=False, methods=['post'])
-    def calculate_cables(self, request):
-        """
-        Calculadora de cables
-        POST /api/calculations/calculate_cables/
-        """
-        # Validar datos de entrada
-        data = request.data
-        
-        # Validaciones básicas
-        required_fields = ['project_id', 'total_length', 'wire_gauge', 'cable_type']
-        for field in required_fields:
-            if field not in data or not data[field]:
-                return Response(
-                    {'error': f'El campo {field} es requerido'},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-        
-        try:
-            total_length = Decimal(str(data['total_length']))
-            wire_gauge = data['wire_gauge']
-            cable_type = data['cable_type']
-            installation_type = data.get('installation_type', 'Aérea')
-            
-            # Metros por rollo estándar (100 metros)
-            meters_per_roll = Decimal('100.0')
-            
-            # Factor de desperdicio del 15% para cables
-            waste_factor = Decimal('0.15')
-            length_with_waste = total_length * (1 + waste_factor)
-            
-            # Rollos necesarios
-            rolls_needed = math.ceil(length_with_waste / meters_per_roll)
-            
-            # Buscar material sugerido
-            material = None
-            estimated_cost = None
-            
-            if data.get('material_id'):
-                try:
-                    from apps.materials.models import Material
-                    material = Material.objects.get(id=data['material_id'])
-                    if material.reference_price:
-                        estimated_cost = rolls_needed * material.reference_price
-                except Material.DoesNotExist:
-                    pass
-            
-            # Crear registro de cálculo
-            from .models import CalculationType, Calculation
-            calculation_type = CalculationType.objects.get(code='cable')
-            
-            calculation = Calculation.objects.create(
-                project_id=data['project_id'],
-                calculation_type=calculation_type,
-                material=material,
-                input_data=dict(data),
-                calculated_quantity=length_with_waste,
-                unit='metros',
-                estimated_cost=estimated_cost,
-                detailed_results={
-                    'base_length': float(total_length),
-                    'waste_factor_applied': float(waste_factor),
-                    'rolls_needed': rolls_needed,
-                    'meters_per_roll': float(meters_per_roll)
-                }
-            )
-            
-            return Response({
-                'calculation_id': calculation.id,
-                'calculation_type': 'cables',
-                'calculated_quantity': float(length_with_waste),
-                'unit': 'metros',
-                'estimated_cost': float(estimated_cost) if estimated_cost else None,
-                'detailed_results': calculation.detailed_results,
-                'specific_details': {
-                    'total_length': float(length_with_waste),
-                    'wire_gauge': wire_gauge,
-                    'cable_type': cable_type,
-                    'installation_type': installation_type,
-                    'rolls_needed': rolls_needed
-                },
-                'material_suggestions': self._get_material_suggestions('lighting', 'cable')
-            })
-            
-        except (ValueError, TypeError, Decimal.InvalidOperation) as e:
-            return Response(
-                {'error': f'Error en los datos de entrada: {str(e)}'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-        except Exception as e:
-            return Response(
-                {'error': f'Error interno del servidor: {str(e)}'},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
-    
     @action(detail=False, methods=['post'])
     def calculate_empaste(self, request):
         """
-        Calculadora de empaste
+        Calculadora de empaste - CORREGIDA
         POST /api/calculations/calculate_empaste/
         """
-        # Datos básicos requeridos
-        data = request.data
-        area = Decimal(str(data['area_to_cover']))
-        empaste_type = data['empaste_type']
-        number_of_coats = int(data.get('number_of_coats', 1))
-        coverage_per_kg = Decimal(str(data.get('coverage_per_kg', '4.0')))
+        serializer = EmpasteCalculationRequestSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         
-        # Cálculos de empaste
-        # Factor de desperdicio del 15% para empaste
-        waste_factor = Decimal('0.15')
+        data = serializer.validated_data
         
-        # Kilogramos base necesarios
-        kg_base = (area * number_of_coats) / coverage_per_kg
-        kg_with_waste = kg_base * (1 + waste_factor)
+        # ===== CONVERSIÓN A FLOAT PARA EVITAR ERRORES DE TIPO =====
+        area = float(data['area_to_cover'])
+        layers = int(data['number_of_layers'])
         
-        # Sacos necesarios (asumiendo 20kg por saco)
-        kg_per_sack = Decimal('20.0')
-        sacks_needed = math.ceil(kg_with_waste / kg_per_sack)
+        # Cálculos de empaste (rendimiento típico: 1kg por 2m² por capa)
+        kg_per_sqm_per_layer = 0.5  # 0.5 kg por m² por capa
+        total_kg_needed = area * layers * kg_per_sqm_per_layer
+        
+        # Factor de desperdicio
+        waste_factor = 0.05  # 5% de desperdicio para empaste
+        total_kg_with_waste = total_kg_needed * (1 + waste_factor)
+        
+        # Sacos necesarios (asumiendo sacos de 25kg)
+        kg_per_sack = 25.0
+        sacks_needed = math.ceil(total_kg_with_waste / kg_per_sack)
         
         # Buscar material sugerido
         material = None
@@ -558,7 +465,7 @@ class CalculationViewSet(viewsets.ModelViewSet):
             try:
                 material = Material.objects.get(id=data['material_id'])
                 if material.reference_price:
-                    estimated_cost = sacks_needed * material.reference_price
+                    estimated_cost = sacks_needed * float(material.reference_price)
             except Material.DoesNotExist:
                 pass
         
@@ -570,31 +477,39 @@ class CalculationViewSet(viewsets.ModelViewSet):
             calculation_type=calculation_type,
             material=material,
             input_data=dict(data),
-            calculated_quantity=kg_with_waste,
-            unit='kilogramos',
-            estimated_cost=estimated_cost,
+            calculated_quantity=Decimal(str(sacks_needed)),
+            unit='sacos',
+            estimated_cost=Decimal(str(estimated_cost)) if estimated_cost else None,
             detailed_results={
-                'area_to_cover': float(area),
-                'kg_base': float(kg_base),
-                'waste_factor_applied': float(waste_factor),
-                'sacks_needed': sacks_needed,
-                'kg_per_sack': float(kg_per_sack)
+                'total_kg_needed': total_kg_needed,
+                'waste_factor_applied': waste_factor,
+                'total_kg_with_waste': total_kg_with_waste,
+                'kg_per_sack': kg_per_sack
             }
+        )
+        
+        # Crear detalles específicos de empaste
+        empaste_details = EmpasteCalculation.objects.create(
+            calculation=calculation,
+            area_to_cover=Decimal(str(area)),
+            empaste_type=data['empaste_type'],
+            number_of_layers=layers,
+            sacks_needed=sacks_needed,
+            total_kg=Decimal(str(total_kg_with_waste))
         )
         
         return Response({
             'calculation_id': calculation.id,
             'calculation_type': 'empaste',
-            'calculated_quantity': float(kg_with_waste),
-            'unit': 'kilogramos',
-            'estimated_cost': float(estimated_cost) if estimated_cost else None,
+            'calculated_quantity': sacks_needed,
+            'unit': 'sacos',
+            'estimated_cost': estimated_cost,
             'detailed_results': calculation.detailed_results,
             'specific_details': {
-                'area_to_cover': float(area),
-                'empaste_type': empaste_type,
-                'number_of_coats': number_of_coats,
-                'coverage_per_kg': float(coverage_per_kg),
-                'sacks_needed': sacks_needed
+                'area_to_cover': area,
+                'empaste_type': data['empaste_type'],
+                'number_of_layers': layers,
+                'total_kg': total_kg_with_waste
             },
             'material_suggestions': self._get_material_suggestions('construction', 'empaste')
         })

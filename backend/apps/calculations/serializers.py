@@ -4,6 +4,7 @@ from .models import (
     GypsumCalculation, LEDStripCalculation, CableCalculation
 )
 from apps.materials.serializers import MaterialListSerializer
+from decimal import Decimal
 
 class CalculationTypeSerializer(serializers.ModelSerializer):
     """
@@ -110,6 +111,25 @@ class CableCalculationSerializer(serializers.ModelSerializer):
             'meters_per_roll'
         ]
 
+class EmpasteCalculationRequestSerializer(serializers.Serializer):
+    """
+    Serializer para request de cálculo de empaste
+    """
+    project_id = serializers.IntegerField()
+    area_to_cover = serializers.DecimalField(max_digits=10, decimal_places=2, min_value=0.01)
+    empaste_type = serializers.CharField(max_length=50)
+    number_of_layers = serializers.IntegerField(min_value=1, max_value=10)
+    material_id = serializers.IntegerField(required=False)
+    
+    def validate_project_id(self, value):
+        """Validar que el proyecto existe"""
+        from apps.projects.models import Project
+        try:
+            Project.objects.get(id=value)
+        except Project.DoesNotExist:
+            raise serializers.ValidationError("El proyecto no existe")
+        return value
+    
 # Serializers para entrada de datos (requests)
 
 class PaintCalculationRequestSerializer(serializers.Serializer):
@@ -144,27 +164,55 @@ class GypsumCalculationRequestSerializer(serializers.Serializer):
 
 class LEDStripCalculationRequestSerializer(serializers.Serializer):
     """
-    Serializer para request de cálculo de cintas LED
+    Serializer para request de cálculo de cintas LED - CORREGIDO
     """
     project_id = serializers.IntegerField()
     total_length = serializers.DecimalField(max_digits=10, decimal_places=2, min_value=0.01)
     power_per_meter = serializers.DecimalField(max_digits=6, decimal_places=2, min_value=0.1)
     voltage = serializers.CharField(max_length=10)
     strip_type = serializers.CharField(max_length=50)
-    meters_per_roll = serializers.DecimalField(max_digits=6, decimal_places=2, default=5.0)
+    # CORREGIDO: Default como Decimal en lugar de float
+    meters_per_roll = serializers.DecimalField(
+        max_digits=6, 
+        decimal_places=2, 
+        default=Decimal('5.00')  # Era: default=5.0
+    )
     material_id = serializers.IntegerField(required=False)
+    
+    def validate_project_id(self, value):
+        """Validar que el proyecto existe"""
+        from apps.projects.models import Project
+        try:
+            Project.objects.get(id=value)
+        except Project.DoesNotExist:
+            raise serializers.ValidationError("El proyecto no existe")
+        return value
 
 class CableCalculationRequestSerializer(serializers.Serializer):
     """
-    Serializer para request de cálculo de cables
+    Serializer para request de cálculo de cables - CORREGIDO
     """
     project_id = serializers.IntegerField()
     total_length = serializers.DecimalField(max_digits=10, decimal_places=2, min_value=0.01)
     wire_gauge = serializers.CharField(max_length=20)
     cable_type = serializers.CharField(max_length=50)
     installation_type = serializers.CharField(max_length=50)
-    meters_per_roll = serializers.DecimalField(max_digits=6, decimal_places=2, default=100.0)
+    # CORREGIDO: Default como Decimal en lugar de float
+    meters_per_roll = serializers.DecimalField(
+        max_digits=6, 
+        decimal_places=2, 
+        default=Decimal('100.00')  # Era: default=100.0
+    )
     material_id = serializers.IntegerField(required=False)
+    
+    def validate_project_id(self, value):
+        """Validar que el proyecto existe"""
+        from apps.projects.models import Project
+        try:
+            Project.objects.get(id=value)
+        except Project.DoesNotExist:
+            raise serializers.ValidationError("El proyecto no existe")
+        return value
 
 class AddCalculationToBudgetSerializer(serializers.Serializer):
     """
