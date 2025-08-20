@@ -1,0 +1,47 @@
+# ===================================
+# REQUIREMENTS.TXT - RegenerApp Backend
+# Dependencias actualizadas para producción
+# ===================================
+
+# Django Core
+Django==5.0.1
+djangorestframework==3.14.0
+
+# Base de datos
+psycopg2-binary==2.9.9
+
+# Configuración
+python-decouple==3.8
+
+# Servidor WSGI para producción
+gunicorn==21.2.0
+
+# Utilidades
+pillow==10.2.0
+python-dateutil==2.8.2
+
+# CORS para desarrollo
+django-cors-headers==4.3.1
+
+# Validación y serialización
+marshmallow==3.20.2
+
+# Documentación API (opcional)
+drf-spectacular==0.27.1
+
+# Para archivos Excel/PDF (futuro)
+openpyxl==3.1.2
+reportlab==4.0.8
+
+# Testing
+pytest==7.4.4
+pytest-django==4.8.0
+
+# Desarrollo
+django-extensions==3.2.3
+
+# Whitenoise para archivos estáticos en producción
+whitenoise==6.6.0
+
+# Health checks
+django-health-check==3.17.0

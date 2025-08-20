@@ -1,22 +1,88 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.core.widget.NestedScrollView
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="@color/background_main"
     tools:context=".ui.presupuestos.PresupuestosFragment">
 
-    <TextView
-        android:id="@+id/text_presupuestos"
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginStart="8dp"
-        android:layout_marginTop="8dp"
-        android:layout_marginEnd="8dp"
-        android:textAlignment="center"
-        android:textSize="20sp"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
-</androidx.constraintlayout.widget.ConstraintLayout>
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <!-- TabLayout para las dos tablas -->
+        <com.google.android.material.tabs.TabLayout
+            android:id="@+id/tab_layout_budget"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            app:tabIndicatorColor="@color/primary_color"
+            app:tabSelectedTextColor="@color/primary_color"
+            app:tabTextColor="@color/gray_600"
+            app:tabMode="fixed"
+            app:tabGravity="fill">
+
+            <com.google.android.material.tabs.TabItem
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/presupuesto_inicial" />
+
+            <com.google.android.material.tabs.TabItem
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/gastos_reales" />
+
+        </com.google.android.material.tabs.TabLayout>
+
+        <!-- ViewPager para las tablas -->
+        <androidx.viewpager2.widget.ViewPager2
+            android:id="@+id/view_pager_budget"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="10dp" />
+
+        <!-- Floating Action Buttons -->
+        <LinearLayout
+            android:id="@+id/layout_fab_actions"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="end"
+            android:layout_marginBottom="16dp"
+            android:visibility="gone">
+
+            <!-- FAB Copiar a Gastos Reales -->
+            <com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
+                android:id="@+id/fab_copy_to_expenses"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="8dp"
+                android:text="@string/btn_copiar_gastos"
+                android:icon="@drawable/ic_content_copy_24"
+                app:backgroundTint="@color/warning"
+                app:iconTint="@color/white"
+                app:shapeAppearanceOverlay="@style/ShapeAppearanceOverlay.MaterialComponents.FloatingActionButton" />
+
+            <!-- FAB Agregar Item -->
+            <com.google.android.material.floatingactionbutton.FloatingActionButton
+                android:id="@+id/fab_add_item"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:src="@drawable/ic_add_24"
+                app:backgroundTint="@color/primary_color"
+                app:tint="@color/white" />
+
+        </LinearLayout>
+
+        <!-- Espacio adicional para evitar que el bottom nav oculte el contenido -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="50dp" />
+
+    </LinearLayout>
+
+</androidx.core.widget.NestedScrollView>
