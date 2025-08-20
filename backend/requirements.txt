@@ -1,5 +1,6 @@
 # ===================================
 # REQUIREMENTS.TXT - RegenerApp Backend
+# Dependencias actualizadas para producción
 # ===================================
 
 # Django Core
@@ -11,6 +12,9 @@ psycopg2-binary==2.9.9
 
 # Configuración
 python-decouple==3.8
+
+# Servidor WSGI para producción
+gunicorn==21.2.0
 
 # Utilidades
 pillow==10.2.0
@@ -35,3 +39,9 @@ pytest-django==4.8.0
 
 # Desarrollo
 django-extensions==3.2.3
+
+# Whitenoise para archivos estáticos en producción
+whitenoise==6.6.0
+
+# Health checks
+django-health-check==3.17.0
