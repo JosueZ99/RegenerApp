@@ -10,257 +10,430 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="24dp">
+        android:padding="16dp">
 
-        <!-- Material/Descripción -->
-        <com.google.android.material.textfield.TextInputLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="16dp"
-            android:hint="Material/Servicio"
-            app:startIconDrawable="@drawable/ic_assignment_24"
-            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
-
-            <TextView
-                android:id="@+id/tv_detail_material"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:padding="16dp"
-                android:textSize="16sp"
-                android:textColor="@color/text_primary"
-                android:background="@android:color/transparent" />
-
-        </com.google.android.material.textfield.TextInputLayout>
-
-        <!-- Fila 1: Cantidad y Precio Unitario -->
+        <!-- ============= MATERIAL / SERVICIO ============= -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:layout_marginBottom="16dp">
+            android:gravity="center_vertical"
+            android:paddingVertical="8dp">
 
-            <!-- Cantidad -->
-            <com.google.android.material.textfield.TextInputLayout
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
+            <ImageView
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:src="@drawable/ic_assignment_24"
                 android:layout_marginEnd="8dp"
-                android:hint="Cantidad"
-                app:startIconDrawable="@drawable/ic_numbers_24"
-                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+                app:tint="@color/text_secondary" />
 
-                <TextView
-                    android:id="@+id/tv_detail_quantity"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:padding="16dp"
-                    android:textSize="16sp"
-                    android:textColor="@color/text_primary"
-                    android:background="@android:color/transparent" />
-
-            </com.google.android.material.textfield.TextInputLayout>
-
-            <!-- Precio Unitario -->
-            <com.google.android.material.textfield.TextInputLayout
+            <LinearLayout
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:layout_marginStart="8dp"
-                android:hint="Precio Unitario"
-                app:startIconDrawable="@drawable/ic_attach_money_24"
-                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+                android:orientation="vertical">
 
                 <TextView
-                    android:id="@+id/tv_detail_unit_price"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Material/Servicio"
+                    android:textSize="12sp"
+                    android:textColor="@color/text_secondary" />
+
+                <TextView
+                    android:id="@+id/tv_detail_material"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:padding="16dp"
                     android:textSize="16sp"
-                    android:textColor="@color/text_primary"
-                    android:background="@android:color/transparent" />
-
-            </com.google.android.material.textfield.TextInputLayout>
-
+                    android:includeFontPadding="false"
+                    android:textColor="@color/text_primary" />
+            </LinearLayout>
         </LinearLayout>
 
-        <!-- Separador visual para cálculos -->
+        <!-- ============= CANTIDAD / PRECIO UNITARIO ============= -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:weightSum="2"
+            android:paddingTop="4dp"
+            android:paddingBottom="8dp">
+
+            <!-- Cantidad -->
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:paddingEnd="6dp">
+
+                <ImageView
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:src="@drawable/ic_numbers_24"
+                    android:layout_marginEnd="6dp"
+                    app:tint="@color/text_secondary" />
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Cantidad"
+                        android:textSize="12sp"
+                        android:textColor="@color/text_secondary" />
+
+                    <TextView
+                        android:id="@+id/tv_detail_quantity"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:textSize="16sp"
+                        android:includeFontPadding="false"
+                        android:textColor="@color/text_primary" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <!-- Precio Unitario -->
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:paddingStart="6dp">
+
+                <ImageView
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:src="@drawable/ic_attach_money_24"
+                    android:layout_marginEnd="6dp"
+                    app:tint="@color/text_secondary" />
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Precio Unitario"
+                        android:textSize="12sp"
+                        android:textColor="@color/text_secondary" />
+
+                    <TextView
+                        android:id="@+id/tv_detail_unit_price"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:textSize="16sp"
+                        android:includeFontPadding="false"
+                        android:textColor="@color/text_primary" />
+                </LinearLayout>
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- Separador -->
         <View
             android:layout_width="match_parent"
             android:layout_height="1dp"
-            android:layout_marginVertical="8dp"
-            android:background="@color/gray_300" />
+            android:background="@color/gray_300"
+            android:layout_marginVertical="8dp"/>
 
+        <!-- ============= SECCIÓN: CÁLCULOS ============= -->
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="Cálculos"
-            android:textSize="14sp"
+            android:textSize="13sp"
             android:textStyle="bold"
             android:textColor="@color/text_secondary"
-            android:layout_marginBottom="12dp"
-            android:gravity="center" />
+            android:gravity="center"
+            android:layout_marginBottom="8dp"/>
 
         <!-- Subtotal -->
-        <com.google.android.material.textfield.TextInputLayout
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="8dp"
-            android:hint="Subtotal"
-            app:startIconDrawable="@drawable/ic_calculate_24"
-            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingVertical="6dp">
 
-            <TextView
-                android:id="@+id/tv_detail_subtotal"
-                android:layout_width="match_parent"
+            <ImageView
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:src="@drawable/ic_calculate_24"
+                android:layout_marginEnd="8dp"
+                app:tint="@color/text_secondary" />
+
+            <LinearLayout
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:padding="16dp"
-                android:textSize="16sp"
-                android:textColor="@color/text_primary"
-                android:textStyle="bold"
-                android:background="@android:color/transparent" />
+                android:layout_weight="1"
+                android:orientation="vertical">
 
-        </com.google.android.material.textfield.TextInputLayout>
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Subtotal"
+                    android:textSize="12sp"
+                    android:textColor="@color/text_secondary"/>
+
+                <TextView
+                    android:id="@+id/tv_detail_subtotal"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textStyle="bold"
+                    android:textSize="16sp"
+                    android:includeFontPadding="false"
+                    android:textColor="@color/text_primary"/>
+            </LinearLayout>
+        </LinearLayout>
 
         <!-- Descuento -->
-        <com.google.android.material.textfield.TextInputLayout
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="8dp"
-            android:hint="Descuento Aplicado"
-            app:startIconDrawable="@drawable/ic_discount_24"
-            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingVertical="6dp">
 
-            <TextView
-                android:id="@+id/tv_detail_discount"
-                android:layout_width="match_parent"
+            <ImageView
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:src="@drawable/ic_discount_24"
+                android:layout_marginEnd="8dp"
+                app:tint="@color/warning" />
+
+            <LinearLayout
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:padding="16dp"
-                android:textSize="16sp"
-                android:textColor="@color/warning"
-                android:background="@android:color/transparent" />
+                android:layout_weight="1"
+                android:orientation="vertical">
 
-        </com.google.android.material.textfield.TextInputLayout>
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Descuento aplicado"
+                    android:textSize="12sp"
+                    android:textColor="@color/text_secondary"/>
 
-        <!-- Monto Final -->
-        <com.google.android.material.textfield.TextInputLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="24dp"
-            android:hint="Monto Final Pagado"
-            app:startIconDrawable="@drawable/ic_payment_24"
-            app:boxBackgroundColor="@color/success_light"
-            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+                <TextView
+                    android:id="@+id/tv_detail_discount"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textSize="16sp"
+                    android:includeFontPadding="false"
+                    android:textColor="@color/warning"/>
+            </LinearLayout>
+        </LinearLayout>
 
-            <TextView
-                android:id="@+id/tv_detail_final_amount"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:padding="16dp"
-                android:textSize="18sp"
-                android:textColor="@color/success"
-                android:textStyle="bold"
-                android:background="@android:color/transparent" />
-
-        </com.google.android.material.textfield.TextInputLayout>
-
-        <!-- Separador visual para información de compra -->
-        <View
-            android:layout_width="match_parent"
-            android:layout_height="1dp"
-            android:layout_marginVertical="16dp"
-            android:background="@color/gray_300" />
-
-        <!-- Información de Compra -->
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="16dp"
-            android:text="Información de Compra"
-            android:textSize="14sp"
-            android:textStyle="bold"
-            android:textColor="@color/text_secondary"
-            android:gravity="center" />
-
-        <!-- Proveedor -->
-        <com.google.android.material.textfield.TextInputLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="12dp"
-            android:hint="Proveedor"
-            app:startIconDrawable="@drawable/ic_store_24"
-            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
-
-            <TextView
-                android:id="@+id/tv_detail_supplier"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:padding="16dp"
-                android:textSize="16sp"
-                android:textColor="@color/text_primary"
-                android:background="@android:color/transparent" />
-
-        </com.google.android.material.textfield.TextInputLayout>
-
-        <!-- Número de Factura -->
-        <com.google.android.material.textfield.TextInputLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="12dp"
-            android:hint="Número de Factura"
-            app:startIconDrawable="@drawable/ic_receipt_24"
-            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
-
-            <TextView
-                android:id="@+id/tv_detail_invoice"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:padding="16dp"
-                android:textSize="16sp"
-                android:textColor="@color/text_primary"
-                android:background="@android:color/transparent" />
-
-        </com.google.android.material.textfield.TextInputLayout>
-
-        <!-- Fecha de Compra -->
-        <com.google.android.material.textfield.TextInputLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:hint="Fecha de Compra"
-            app:startIconDrawable="@drawable/ic_calendar_today_24"
-            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
-
-            <TextView
-                android:id="@+id/tv_detail_purchase_date"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:padding="16dp"
-                android:textSize="16sp"
-                android:textColor="@color/text_primary"
-                android:background="@android:color/transparent" />
-
-        </com.google.android.material.textfield.TextInputLayout>
-
-        <!-- Información adicional -->
+        <!-- Monto Final destacado -->
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
+            android:layout_marginTop="6dp"
+            app:cardBackgroundColor="@color/success_light"
             app:cardCornerRadius="8dp"
-            app:cardElevation="2dp"
+            app:cardElevation="0dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:padding="12dp">
+
+                <ImageView
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:src="@drawable/ic_payment_24"
+                    android:layout_marginEnd="8dp"
+                    app:tint="@color/success" />
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Monto final pagado"
+                        android:textSize="12sp"
+                        android:textColor="@color/success"/>
+
+                    <TextView
+                        android:id="@+id/tv_detail_final_amount"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:textStyle="bold"
+                        android:textSize="18sp"
+                        android:includeFontPadding="false"
+                        android:textColor="@color/success"/>
+                </LinearLayout>
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Separador -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:layout_marginVertical="12dp"
+            android:background="@color/gray_300" />
+
+        <!-- ============= SECCIÓN: INFORMACIÓN DE COMPRA ============= -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Información de Compra"
+            android:textSize="13sp"
+            android:textStyle="bold"
+            android:textColor="@color/text_secondary"
+            android:gravity="center"
+            android:layout_marginBottom="8dp"/>
+
+        <!-- Proveedor -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingVertical="6dp">
+
+            <ImageView
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:src="@drawable/ic_store_24"
+                android:layout_marginEnd="8dp"
+                app:tint="@color/text_secondary" />
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Proveedor"
+                    android:textSize="12sp"
+                    android:textColor="@color/text_secondary"/>
+
+                <TextView
+                    android:id="@+id/tv_detail_supplier"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textSize="16sp"
+                    android:includeFontPadding="false"
+                    android:textColor="@color/text_primary"/>
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- Número de Factura -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingVertical="6dp">
+
+            <ImageView
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:src="@drawable/ic_receipt_24"
+                android:layout_marginEnd="8dp"
+                app:tint="@color/text_secondary" />
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Número de Factura"
+                    android:textSize="12sp"
+                    android:textColor="@color/text_secondary"/>
+
+                <TextView
+                    android:id="@+id/tv_detail_invoice"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textSize="16sp"
+                    android:includeFontPadding="false"
+                    android:textColor="@color/text_primary"/>
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- Fecha de Compra -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingVertical="6dp">
+
+            <ImageView
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:src="@drawable/ic_calendar_today_24"
+                android:layout_marginEnd="8dp"
+                app:tint="@color/text_secondary" />
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Fecha de Compra"
+                    android:textSize="12sp"
+                    android:textColor="@color/text_secondary"/>
+
+                <TextView
+                    android:id="@+id/tv_detail_purchase_date"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textSize="16sp"
+                    android:includeFontPadding="false"
+                    android:textColor="@color/text_primary"/>
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- Nota informativa -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            app:cardCornerRadius="8dp"
+            app:cardElevation="0dp"
             app:cardBackgroundColor="@color/info_light">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
-                android:padding="12dp"
-                android:gravity="center_vertical">
+                android:gravity="center_vertical"
+                android:padding="10dp">
 
                 <ImageView
-                    android:layout_width="20dp"
-                    android:layout_height="20dp"
+                    android:layout_width="18dp"
+                    android:layout_height="18dp"
                     android:src="@drawable/ic_info_24"
-                    android:layout_marginEnd="8dp"
+                    android:layout_marginEnd="6dp"
                     app:tint="@color/info" />
 
                 <TextView
@@ -269,13 +442,11 @@
                     android:layout_weight="1"
                     android:text="Para editar este gasto, use el menú de opciones (⋮) en la tabla"
                     android:textSize="12sp"
+                    android:includeFontPadding="false"
                     android:textColor="@color/info"
-                    android:lineSpacingMultiplier="1.2" />
-
+                    android:lineSpacingMultiplier="1.1" />
             </LinearLayout>
-
         </com.google.android.material.card.MaterialCardView>
 
     </LinearLayout>
-
 </androidx.core.widget.NestedScrollView>

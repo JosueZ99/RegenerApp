@@ -43,7 +43,7 @@ import java.text.NumberFormat;
 
 /**
  * Fragment del Sistema de Presupuestos con tablas interactivas
- * SIMPLIFICADO - SIN resumen financiero (solo en Dashboard)
+ * VERSIÓN CORREGIDA CON CACHÉ - Solucionado timing de ViewPager2
  */
 public class PresupuestosFragment extends Fragment {
 
@@ -58,6 +58,14 @@ public class PresupuestosFragment extends Fragment {
 
     // Adapter para ViewPager
     private BudgetPagerAdapter pagerAdapter;
+
+    // Referencias a fragments (solución al problema de timing)
+    private BudgetInitialTableFragment budgetInitialFragment;
+    private ExpensesRealTableFragment expensesRealFragment;
+
+    // CACHE para datos cuando los fragments no están listos (NUEVA SOLUCIÓN)
+    private List<Map<String, Object>> cachedBudgetData;
+    private List<Map<String, Object>> cachedExpensesData;
 
     // Formatters
     private final NumberFormat currencyFormatter = NumberFormat.getCurrencyInstance(new Locale("es", "EC"));
@@ -230,63 +238,47 @@ public class PresupuestosFragment extends Fragment {
     }
 
     /**
-     * Observar todos los LiveData del ViewModel - SIN RESUMEN FINANCIERO
+     * Observar todos los LiveData del ViewModel - VERSIÓN CORREGIDA CON CACHÉ
      */
     private void observeViewModel() {
         Log.d(TAG, "Configurando observadores del ViewModel");
 
-        // Observar presupuesto inicial
+        // Observar presupuesto inicial - VERSIÓN CON CACHÉ
         presupuestosViewModel.getBudgetInitial().observe(getViewLifecycleOwner(), budgetItems -> {
             Log.d(TAG, "Observer: Presupuesto inicial recibido - Items: " +
                     (budgetItems != null ? budgetItems.size() : 0));
 
-            // Notificar al fragment de la tabla inicial
-            if (pagerAdapter != null) {
-                Fragment currentFragment = getChildFragmentManager().findFragmentByTag("f0");
-                if (currentFragment instanceof BudgetInitialTableFragment) {
-                    Log.d(TAG, "Observer: Enviando datos a BudgetInitialTableFragment");
-                    ((BudgetInitialTableFragment) currentFragment).updateBudgetData(budgetItems);
-                } else {
-                    Log.w(TAG, "Observer: Fragment f0 no es BudgetInitialTableFragment o es null");
-                }
+            // Guardar en caché
+            cachedBudgetData = budgetItems;
+
+            // Intentar enviar inmediatamente
+            if (budgetInitialFragment != null) {
+                Log.d(TAG, "Observer: Enviando datos a BudgetInitialTableFragment (referencia directa)");
+                budgetInitialFragment.updateBudgetData(budgetItems);
             } else {
-                Log.w(TAG, "Observer: pagerAdapter es null");
+                Log.d(TAG, "Observer: budgetInitialFragment es null, datos guardados en caché");
             }
         });
 
-        // Observar gastos reales - CON LOGS ADICIONALES DE DIAGNÓSTICO
+        // Observar gastos reales - VERSIÓN CON CACHÉ
         presupuestosViewModel.getExpensesReal().observe(getViewLifecycleOwner(), expenses -> {
             Log.d(TAG, "Observer: Gastos reales recibidos - Items: " +
                     (expenses != null ? expenses.size() : 0));
 
-            // LOG ADICIONAL: Mostrar contenido de los datos
             if (expenses != null && !expenses.isEmpty()) {
                 Log.d(TAG, "Observer: Primer gasto real = " + expenses.get(0).toString());
-            } else {
-                Log.w(TAG, "Observer: Lista de gastos reales está vacía o es null");
             }
 
-            // Notificar al fragment de la tabla de gastos - CON LOGS ADICIONALES
-            if (pagerAdapter != null) {
-                Log.d(TAG, "Observer: pagerAdapter disponible, buscando fragment f1");
-                Fragment currentFragment = getChildFragmentManager().findFragmentByTag("f1");
+            // Guardar en caché
+            cachedExpensesData = expenses;
 
-                if (currentFragment != null) {
-                    Log.d(TAG, "Observer: Fragment f1 encontrado: " + currentFragment.getClass().getSimpleName());
-
-                    if (currentFragment instanceof ExpensesRealTableFragment) {
-                        Log.d(TAG, "Observer: Enviando " + (expenses != null ? expenses.size() : 0) +
-                                " gastos a ExpensesRealTableFragment");
-                        ((ExpensesRealTableFragment) currentFragment).updateExpensesData(expenses);
-                    } else {
-                        Log.e(TAG, "Observer: Fragment f1 NO es ExpensesRealTableFragment, es: " +
-                                currentFragment.getClass().getSimpleName());
-                    }
-                } else {
-                    Log.e(TAG, "Observer: Fragment f1 es NULL - No se puede enviar datos");
-                }
+            // Intentar enviar inmediatamente
+            if (expensesRealFragment != null) {
+                Log.d(TAG, "Observer: Enviando " + (expenses != null ? expenses.size() : 0) +
+                        " gastos a ExpensesRealTableFragment (referencia directa)");
+                expensesRealFragment.updateExpensesData(expenses);
             } else {
-                Log.e(TAG, "Observer: pagerAdapter es NULL");
+                Log.d(TAG, "Observer: expensesRealFragment es null, datos guardados en caché");
             }
         });
 
@@ -301,7 +293,7 @@ public class PresupuestosFragment extends Fragment {
             updateLoadingState(isLoading);
         });
 
-        // Observar errores - CON LOGS ADICIONALES
+        // Observar errores
         presupuestosViewModel.getError().observe(getViewLifecycleOwner(), error -> {
             if (error != null && !error.isEmpty()) {
                 Log.e(TAG, "Observer: Error recibido - " + error);
@@ -312,33 +304,39 @@ public class PresupuestosFragment extends Fragment {
         });
     }
 
+    // ==========================================
+    // MÉTODOS NUEVOS PARA CACHÉ (SOLUCIÓN AL TIMING)
+    // ==========================================
+
     /**
-     * Método helper para enviar datos al fragment de gastos reales con retry
+     * Enviar datos cacheados al fragment de presupuesto inicial
      */
-    private void sendDataToExpensesFragment(List<Map<String, Object>> expenses) {
-        Log.d(TAG, "sendDataToExpensesFragment - Intentando enviar datos...");
+    private void sendCachedDataToBudgetFragment() {
+        if (budgetInitialFragment != null && cachedBudgetData != null) {
+            // Usar un Handler para asegurar que el fragment esté completamente inicializado
+            new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> {
+                if (budgetInitialFragment != null && cachedBudgetData != null) {
+                    Log.d(TAG, "Enviando datos cacheados a BudgetInitialTableFragment: " +
+                            cachedBudgetData.size() + " items");
+                    budgetInitialFragment.updateBudgetData(cachedBudgetData);
+                }
+            }, 100);
+        }
+    }
 
-        if (pagerAdapter != null) {
-            Fragment currentFragment = getChildFragmentManager().findFragmentByTag("f1");
-
-            if (currentFragment instanceof ExpensesRealTableFragment) {
-                Log.d(TAG, "sendDataToExpensesFragment - Fragment encontrado, enviando datos");
-                ((ExpensesRealTableFragment) currentFragment).updateExpensesData(expenses);
-            } else {
-                Log.w(TAG, "sendDataToExpensesFragment - Fragment no listo, reintentando en 500ms");
-                // Reintentar después de un pequeño delay
-                new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> {
-                    Fragment retryFragment = getChildFragmentManager().findFragmentByTag("f1");
-                    if (retryFragment instanceof ExpensesRealTableFragment) {
-                        Log.d(TAG, "sendDataToExpensesFragment - RETRY exitoso, enviando datos");
-                        ((ExpensesRealTableFragment) retryFragment).updateExpensesData(expenses);
-                    } else {
-                        Log.e(TAG, "sendDataToExpensesFragment - RETRY falló, fragment aún no disponible");
-                    }
-                }, 500);
-            }
-        } else {
-            Log.e(TAG, "sendDataToExpensesFragment - pagerAdapter es NULL");
+    /**
+     * Enviar datos cacheados al fragment de gastos reales
+     */
+    private void sendCachedDataToExpensesFragment() {
+        if (expensesRealFragment != null && cachedExpensesData != null) {
+            // Usar un Handler para asegurar que el fragment esté completamente inicializado
+            new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> {
+                if (expensesRealFragment != null && cachedExpensesData != null) {
+                    Log.d(TAG, "Enviando datos cacheados a ExpensesRealTableFragment: " +
+                            cachedExpensesData.size() + " items");
+                    expensesRealFragment.updateExpensesData(cachedExpensesData);
+                }
+            }, 100);
         }
     }
 
@@ -856,18 +854,25 @@ public class PresupuestosFragment extends Fragment {
             presupuestosViewModel.clearData();
         }
 
+        // Limpiar referencias y caché
+        budgetInitialFragment = null;
+        expensesRealFragment = null;
+        cachedBudgetData = null;          // NUEVO - Limpiar caché
+        cachedExpensesData = null;        // NUEVO - Limpiar caché
+
         binding = null;
         Log.d(TAG, "Vista destruida y datos limpiados");
     }
 
     // ==========================================
-    // ADAPTER PARA VIEWPAGER
+    // ADAPTER PARA VIEWPAGER - VERSIÓN CORREGIDA CON CACHÉ
     // ==========================================
 
     /**
      * Adapter para ViewPager2 que maneja las dos tablas de presupuesto
+     * VERSIÓN CORREGIDA: Con notificación de creación de fragments + envío de caché
      */
-    private static class BudgetPagerAdapter extends FragmentStateAdapter {
+    private class BudgetPagerAdapter extends FragmentStateAdapter {
 
         public BudgetPagerAdapter(@NonNull Fragment fragment) {
             super(fragment);
@@ -876,13 +881,32 @@ public class PresupuestosFragment extends Fragment {
         @NonNull
         @Override
         public Fragment createFragment(int position) {
+            Log.d(TAG, "BudgetPagerAdapter - createFragment position: " + position);
+
             switch (position) {
                 case 0:
-                    return new BudgetInitialTableFragment();
+                    // Crear y guardar referencia al fragment de presupuesto inicial
+                    budgetInitialFragment = new BudgetInitialTableFragment();
+                    Log.d(TAG, "BudgetPagerAdapter - BudgetInitialTableFragment creado");
+
+                    // Enviar datos desde caché si están disponibles
+                    sendCachedDataToBudgetFragment();
+
+                    return budgetInitialFragment;
                 case 1:
-                    return new ExpensesRealTableFragment();
+                    // Crear y guardar referencia al fragment de gastos reales
+                    expensesRealFragment = new ExpensesRealTableFragment();
+                    Log.d(TAG, "BudgetPagerAdapter - ExpensesRealTableFragment creado");
+
+                    // Enviar datos desde caché si están disponibles
+                    sendCachedDataToExpensesFragment();
+
+                    return expensesRealFragment;
                 default:
-                    return new BudgetInitialTableFragment();
+                    Log.w(TAG, "BudgetPagerAdapter - Posición inválida: " + position);
+                    budgetInitialFragment = new BudgetInitialTableFragment();
+                    sendCachedDataToBudgetFragment();
+                    return budgetInitialFragment;
             }
         }
 
