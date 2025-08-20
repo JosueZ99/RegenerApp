@@ -381,6 +381,24 @@ public interface ApiService {
     );
 
     // ==========================================
+    // FINANCIAL SUMMARY APIs - NUEVAS
+    // ==========================================
+
+    /**
+     * Obtener resumen financiero del proyecto seleccionado
+     * GET /api/budgets/financial-summary/for_selected_project/
+     */
+    @GET("budgets/financial-summary/for_selected_project/")
+    Call<Map<String, Object>> getFinancialSummaryForSelectedProject();
+
+    /**
+     * Refrescar/actualizar resumen financiero específico
+     * POST /api/budgets/financial-summary/{id}/refresh/
+     */
+    @POST("budgets/financial-summary/{id}/refresh/")
+    Call<Map<String, Object>> refreshFinancialSummary(@Path("id") Long summaryId);
+
+    // ==========================================
     // UTILIDADES GENERALES
     // ==========================================
 

@@ -11,6 +11,7 @@ import androidx.lifecycle.MutableLiveData;
 import com.regenerarestudio.regenerapp.data.api.ApiClient;
 import com.regenerarestudio.regenerapp.data.api.ApiService;
 import com.regenerarestudio.regenerapp.data.responses.PaginatedResponse;
+import com.regenerarestudio.regenerapp.utils.FinancialSummaryHelper;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -347,7 +348,6 @@ public class PresupuestosViewModel extends AndroidViewModel {
         isLoadingBudgetLiveData.setValue(true);
         errorLiveData.setValue(null);
 
-        // URL CORREGIDA
         Call<Map<String, Object>> call = apiService.addToBudget(budgetItem);
 
         call.enqueue(new Callback<Map<String, Object>>() {
@@ -357,12 +357,16 @@ public class PresupuestosViewModel extends AndroidViewModel {
                 isLoadingBudgetLiveData.setValue(false);
 
                 if (response.isSuccessful()) {
-                    Log.d(TAG, "Item agregado al presupuesto exitosamente");
+                    Log.d(TAG, "✅ Item agregado al presupuesto exitosamente");
+
                     // Recargar presupuesto inicial
                     if (currentProjectId != null) {
                         loadBudgetInitial(currentProjectId);
-                        loadFinancialSummary(currentProjectId); // Actualizar resumen también
                     }
+
+                    // 🔥 NUEVO: Refrescar resumen financiero automáticamente
+                    refreshFinancialSummaryAfterChange();
+
                 } else {
                     String error = "Error al agregar item al presupuesto: " + response.code();
                     Log.e(TAG, error);
@@ -373,7 +377,6 @@ public class PresupuestosViewModel extends AndroidViewModel {
             @Override
             public void onFailure(@NonNull Call<Map<String, Object>> call, @NonNull Throwable t) {
                 isLoadingBudgetLiveData.setValue(false);
-
                 String error = "Error de conexión al agregar item: " + t.getMessage();
                 Log.e(TAG, error, t);
                 errorLiveData.setValue(error);
@@ -391,7 +394,6 @@ public class PresupuestosViewModel extends AndroidViewModel {
         isLoadingExpensesLiveData.setValue(true);
         errorLiveData.setValue(null);
 
-        // URL CORREGIDA
         Call<Map<String, Object>> call = apiService.addExpense(expense);
 
         call.enqueue(new Callback<Map<String, Object>>() {
@@ -401,12 +403,16 @@ public class PresupuestosViewModel extends AndroidViewModel {
                 isLoadingExpensesLiveData.setValue(false);
 
                 if (response.isSuccessful()) {
-                    Log.d(TAG, "Gasto agregado exitosamente");
+                    Log.d(TAG, "✅ Gasto agregado exitosamente");
+
                     // Recargar gastos reales
                     if (currentProjectId != null) {
                         loadExpensesReal(currentProjectId);
-                        loadFinancialSummary(currentProjectId); // Actualizar resumen también
                     }
+
+                    // 🔥 NUEVO: Refrescar resumen financiero automáticamente
+                    refreshFinancialSummaryAfterChange();
+
                 } else {
                     String error = "Error al agregar gasto: " + response.code();
                     Log.e(TAG, error);
@@ -417,13 +423,223 @@ public class PresupuestosViewModel extends AndroidViewModel {
             @Override
             public void onFailure(@NonNull Call<Map<String, Object>> call, @NonNull Throwable t) {
                 isLoadingExpensesLiveData.setValue(false);
-
                 String error = "Error de conexión al agregar gasto: " + t.getMessage();
                 Log.e(TAG, error, t);
                 errorLiveData.setValue(error);
             }
         });
     }
+
+    /**
+     * Actualizar item del presupuesto inicial - CON REFRESH AUTOMÁTICO
+     * PUT /api/budgets/budget-items/{id}/
+     */
+    public void updateBudgetItem(Long budgetItemId, Map<String, Object> budgetItem) {
+        Log.d(TAG, "Actualizando item del presupuesto ID: " + budgetItemId);
+
+        isLoadingBudgetLiveData.setValue(true);
+        errorLiveData.setValue(null);
+
+        Call<Map<String, Object>> call = apiService.updateBudgetItem(budgetItemId, budgetItem);
+
+        call.enqueue(new Callback<Map<String, Object>>() {
+            @Override
+            public void onResponse(@NonNull Call<Map<String, Object>> call,
+                                   @NonNull Response<Map<String, Object>> response) {
+                isLoadingBudgetLiveData.setValue(false);
+
+                if (response.isSuccessful()) {
+                    Log.d(TAG, "✅ Item del presupuesto actualizado exitosamente");
+
+                    // Recargar presupuesto inicial
+                    if (currentProjectId != null) {
+                        loadBudgetInitial(currentProjectId);
+                    }
+
+                    // 🔥 NUEVO: Refrescar resumen financiero
+                    refreshFinancialSummaryAfterChange();
+
+                } else {
+                    String error = "Error al actualizar item del presupuesto: " + response.code();
+                    Log.e(TAG, error);
+                    errorLiveData.setValue(error);
+                }
+            }
+
+            @Override
+            public void onFailure(@NonNull Call<Map<String, Object>> call, @NonNull Throwable t) {
+                isLoadingBudgetLiveData.setValue(false);
+                String error = "Error de conexión al actualizar item: " + t.getMessage();
+                Log.e(TAG, error, t);
+                errorLiveData.setValue(error);
+            }
+        });
+    }
+
+    /**
+     * Eliminar item del presupuesto inicial - CON REFRESH AUTOMÁTICO
+     * DELETE /api/budgets/budget-items/{id}/
+     */
+    public void deleteBudgetItem(Long budgetItemId) {
+        Log.d(TAG, "Eliminando item del presupuesto ID: " + budgetItemId);
+
+        isLoadingBudgetLiveData.setValue(true);
+        errorLiveData.setValue(null);
+
+        Call<Void> call = apiService.deleteBudgetItem(budgetItemId);
+
+        call.enqueue(new Callback<Void>() {
+            @Override
+            public void onResponse(@NonNull Call<Void> call, @NonNull Response<Void> response) {
+                isLoadingBudgetLiveData.setValue(false);
+
+                if (response.isSuccessful()) {
+                    Log.d(TAG, "✅ Item del presupuesto eliminado exitosamente");
+
+                    // Recargar presupuesto inicial
+                    if (currentProjectId != null) {
+                        loadBudgetInitial(currentProjectId);
+                    }
+
+                    // 🔥 NUEVO: Refrescar resumen financiero
+                    refreshFinancialSummaryAfterChange();
+
+                } else {
+                    String error = "Error al eliminar item del presupuesto: " + response.code();
+                    Log.e(TAG, error);
+                    errorLiveData.setValue(error);
+                }
+            }
+
+            @Override
+            public void onFailure(@NonNull Call<Void> call, @NonNull Throwable t) {
+                isLoadingBudgetLiveData.setValue(false);
+                String error = "Error de conexión al eliminar item: " + t.getMessage();
+                Log.e(TAG, error, t);
+                errorLiveData.setValue(error);
+            }
+        });
+    }
+
+    /**
+     * Actualizar gasto real - CON REFRESH AUTOMÁTICO
+     * PUT /api/budgets/real-expenses/{id}/
+     */
+    public void updateExpense(Long expenseId, Map<String, Object> expense) {
+        Log.d(TAG, "Actualizando gasto real ID: " + expenseId);
+
+        isLoadingExpensesLiveData.setValue(true);
+        errorLiveData.setValue(null);
+
+        Call<Map<String, Object>> call = apiService.updateExpense(expenseId, expense);
+
+        call.enqueue(new Callback<Map<String, Object>>() {
+            @Override
+            public void onResponse(@NonNull Call<Map<String, Object>> call,
+                                   @NonNull Response<Map<String, Object>> response) {
+                isLoadingExpensesLiveData.setValue(false);
+
+                if (response.isSuccessful()) {
+                    Log.d(TAG, "✅ Gasto real actualizado exitosamente");
+
+                    // Recargar gastos reales
+                    if (currentProjectId != null) {
+                        loadExpensesReal(currentProjectId);
+                    }
+
+                    // 🔥 NUEVO: Refrescar resumen financiero
+                    refreshFinancialSummaryAfterChange();
+
+                } else {
+                    String error = "Error al actualizar gasto real: " + response.code();
+                    Log.e(TAG, error);
+                    errorLiveData.setValue(error);
+                }
+            }
+
+            @Override
+            public void onFailure(@NonNull Call<Map<String, Object>> call, @NonNull Throwable t) {
+                isLoadingExpensesLiveData.setValue(false);
+                String error = "Error de conexión al actualizar gasto: " + t.getMessage();
+                Log.e(TAG, error, t);
+                errorLiveData.setValue(error);
+            }
+        });
+    }
+
+    /**
+     * Eliminar gasto real - CON REFRESH AUTOMÁTICO
+     * DELETE /api/budgets/real-expenses/{id}/
+     */
+    public void deleteExpense(Long expenseId) {
+        Log.d(TAG, "Eliminando gasto real ID: " + expenseId);
+
+        isLoadingExpensesLiveData.setValue(true);
+        errorLiveData.setValue(null);
+
+        Call<Void> call = apiService.deleteExpense(expenseId);
+
+        call.enqueue(new Callback<Void>() {
+            @Override
+            public void onResponse(@NonNull Call<Void> call, @NonNull Response<Void> response) {
+                isLoadingExpensesLiveData.setValue(false);
+
+                if (response.isSuccessful()) {
+                    Log.d(TAG, "✅ Gasto real eliminado exitosamente");
+
+                    // Recargar gastos reales
+                    if (currentProjectId != null) {
+                        loadExpensesReal(currentProjectId);
+                    }
+
+                    // 🔥 NUEVO: Refrescar resumen financiero
+                    refreshFinancialSummaryAfterChange();
+
+                } else {
+                    String error = "Error al eliminar gasto real: " + response.code();
+                    Log.e(TAG, error);
+                    errorLiveData.setValue(error);
+                }
+            }
+
+            @Override
+            public void onFailure(@NonNull Call<Void> call, @NonNull Throwable t) {
+                isLoadingExpensesLiveData.setValue(false);
+                String error = "Error de conexión al eliminar gasto: " + t.getMessage();
+                Log.e(TAG, error, t);
+                errorLiveData.setValue(error);
+            }
+        });
+    }
+
+    /**
+     * 🔥 NUEVO MÉTODO: Refrescar resumen financiero después de cambios
+     * Usa el helper para llamar automáticamente a la API de refresh
+     */
+    private void refreshFinancialSummaryAfterChange() {
+        Log.d(TAG, "🔄 Refrescando resumen financiero después del cambio...");
+
+        FinancialSummaryHelper.refreshSelectedProjectSummary(apiService, new FinancialSummaryHelper.RefreshCallback() {
+            @Override
+            public void onSuccess() {
+                Log.d(TAG, "✅ Resumen financiero actualizado correctamente");
+
+                // Recargar resumen local para mostrar datos actualizados
+                if (currentProjectId != null) {
+                    loadFinancialSummary(currentProjectId);
+                }
+            }
+
+            @Override
+            public void onError(String error) {
+                Log.e(TAG, "❌ Error al actualizar resumen financiero: " + error);
+                // No mostramos el error al usuario porque es un proceso en segundo plano
+                // El resumen se actualizará la próxima vez que se cargue
+            }
+        });
+    }
+
+
 
     /**
      * Limpiar datos cuando se cambie de proyecto
