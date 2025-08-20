@@ -10,6 +10,7 @@ import android.widget.PopupMenu;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
+import com.regenerarestudio.regenerapp.utils.BudgetCategoryTranslations;
 
 import com.regenerarestudio.regenerapp.R;
 
@@ -174,8 +175,20 @@ public class BudgetInitialAdapter extends RecyclerView.Adapter<BudgetInitialAdap
                 tvDescription.setText(item.getDescription() != null ? item.getDescription() : "Sin descripción");
             }
 
+            // 🔥 CORRECCIÓN PRINCIPAL - Usar traductor para categoría
             if (tvCategory != null) {
-                tvCategory.setText(item.getCategory() != null ? item.getCategory() : "Sin categoría");
+                String categoryText;
+
+                // Priorizar category_display si está disponible y no está vacío
+                if (item.getCategoryDisplay() != null && !item.getCategoryDisplay().trim().isEmpty()) {
+                    categoryText = item.getCategoryDisplay();
+                } else {
+                    // Usar traductor para la categoría en inglés
+                    categoryText = BudgetCategoryTranslations.translateCategory(item.getCategory());
+                }
+
+                tvCategory.setText(categoryText);
+                Log.d(TAG, "Categoría mostrada: " + categoryText + " (original: " + item.getCategory() + ")");
             }
 
             if (tvQuantity != null) {
@@ -193,16 +206,19 @@ public class BudgetInitialAdapter extends RecyclerView.Adapter<BudgetInitialAdap
             }
 
             if (tvSupplier != null) {
-                tvSupplier.setText(item.getSupplierName() != null ? item.getSupplierName() : "Sin proveedor");
+                tvSupplier.setText(item.getSupplierName() != null ?
+                        item.getSupplierName() : "Sin proveedor");
             }
 
+            // CORREGIDO: Usar tvTotalPrice en lugar de tvTotal
             if (tvTotalPrice != null) {
-                double totalPrice = item.getQuantity() * item.getUnitPrice();
-                String totalText = currencyFormat.format(totalPrice);
+                double total = item.getQuantity() * item.getUnitPrice();
+                String totalText = currencyFormat.format(total);
                 tvTotalPrice.setText(totalText);
             }
 
-            // El menú more ya está configurado en el constructor
+            // ELIMINADO: tvSpaces porque no está declarado en el ViewHolder
+            // Si necesitas mostrar espacios, agrega tvSpaces al ViewHolder primero
         }
 
         /**

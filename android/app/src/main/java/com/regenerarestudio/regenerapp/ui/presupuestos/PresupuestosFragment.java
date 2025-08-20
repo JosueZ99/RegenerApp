@@ -649,8 +649,34 @@ public class PresupuestosFragment extends Fragment {
             request.setDiscount(discount);
             request.setPurchaseDate(purchaseDate);
 
-            // Por ahora usar proveedor fijo (TODO: implementar búsqueda real)
-            request.setSupplierId(1L); // Proveedor por defecto
+            // Obtener proveedor seleccionado del dropdown - CORREGIDO
+            String selectedSupplierName = spnSupplier.getText().toString().trim();
+            if (!selectedSupplierName.isEmpty()) {
+                // Buscar proveedor por nombre y obtener su ID
+                loadSupplierByName(selectedSupplierName, new SupplierCallback() {
+                    @Override
+                    public void onSupplierLoaded(Supplier supplier) {
+                        if (supplier != null) {
+                            Log.d(TAG, "Proveedor encontrado: " + supplier.getName() + " (ID: " + supplier.getId() + ")");
+                            request.setSupplierId(supplier.getId());
+
+                            // Continuar con el envío después de obtener el supplier ID
+                            submitFormWithSupplier(isExpense, editItem, request, dialog);
+                        } else {
+                            Log.w(TAG, "Proveedor no encontrado: " + selectedSupplierName);
+                            showErrorMessage("Proveedor no encontrado: " + selectedSupplierName);
+                        }
+                    }
+                });
+
+                // Retornar false para prevenir el envío inmediato
+                // El envío real se hará en submitFormWithSupplier
+                return false;
+            } else {
+                // Si no hay proveedor seleccionado, usar null
+                request.setSupplierId(null);
+                Log.w(TAG, "No se seleccionó proveedor");
+            }
 
             // Convertir a Map para el ViewModel
             Map<String, Object> requestMap = budgetRequestToMap(request);
@@ -704,33 +730,83 @@ public class PresupuestosFragment extends Fragment {
     }
 
     /**
-     * Cargar todos los proveedores
+     * Cargar todos los proveedores - IMPLEMENTACIÓN CORREGIDA
      */
     private void loadAllSuppliers(SuppliersListCallback callback) {
-        // TODO: Implementar llamada al ViewModel para obtener proveedores
-        Log.d(TAG, "loadAllSuppliers: Implementar llamada al ViewModel");
-        // Por ahora callback con lista vacía para evitar errores
-        callback.onSuppliersLoaded(new ArrayList<>());
+        Log.d(TAG, "loadAllSuppliers: Cargando desde ViewModel...");
+
+        if (presupuestosViewModel == null) {
+            Log.e(TAG, "ViewModel es null, no se pueden cargar proveedores");
+            callback.onSuppliersLoaded(new ArrayList<>());
+            return;
+        }
+
+        presupuestosViewModel.loadAllSuppliers(new PresupuestosViewModel.SuppliersCallback() {
+            @Override
+            public void onSuppliersLoaded(List<Supplier> suppliers) {
+                Log.d(TAG, "Proveedores cargados exitosamente: " + suppliers.size());
+                callback.onSuppliersLoaded(suppliers);
+            }
+
+            @Override
+            public void onError(String error) {
+                Log.e(TAG, "Error cargando proveedores: " + error);
+                showErrorMessage("Error al cargar proveedores: " + error);
+                callback.onSuppliersLoaded(new ArrayList<>());
+            }
+        });
     }
 
     /**
-     * Cargar proveedor por ID
+     * Cargar proveedor por ID - IMPLEMENTACIÓN CORREGIDA
      */
     private void loadSupplierById(Long supplierId, SupplierCallback callback) {
-        // TODO: Implementar llamada al ViewModel para obtener proveedor por ID
-        Log.d(TAG, "loadSupplierById: Implementar llamada al ViewModel para ID " + supplierId);
-        // Por ahora callback con null para evitar errores
-        callback.onSupplierLoaded(null);
+        Log.d(TAG, "loadSupplierById: Cargando proveedor ID " + supplierId);
+
+        if (presupuestosViewModel == null) {
+            Log.e(TAG, "ViewModel es null, no se puede cargar proveedor");
+            callback.onSupplierLoaded(null);
+            return;
+        }
+
+        presupuestosViewModel.loadSupplierById(supplierId, new PresupuestosViewModel.SupplierCallback() {
+            @Override
+            public void onSupplierLoaded(Supplier supplier) {
+                Log.d(TAG, "Proveedor cargado: " + (supplier != null ? supplier.getName() : "null"));
+                callback.onSupplierLoaded(supplier);
+            }
+
+            @Override
+            public void onError(String error) {
+                Log.e(TAG, "Error cargando proveedor: " + error);
+                callback.onSupplierLoaded(null);
+            }
+        });
     }
 
     /**
-     * Cargar proveedor por nombre
+     * Cargar proveedor por nombre - IMPLEMENTACIÓN CORREGIDA
      */
     private void loadSupplierByName(String supplierName, SupplierCallback callback) {
-        // TODO: Implementar llamada al ViewModel para obtener proveedor por nombre
-        Log.d(TAG, "loadSupplierByName: Implementar llamada al ViewModel para nombre " + supplierName);
-        // Por ahora callback con null para evitar errores
-        callback.onSupplierLoaded(null);
+        Log.d(TAG, "loadSupplierByName: Buscando proveedor por nombre: " + supplierName);
+
+        // Cargar todos los proveedores y buscar por nombre
+        loadAllSuppliers(new SuppliersListCallback() {
+            @Override
+            public void onSuppliersLoaded(List<Supplier> suppliers) {
+                // Buscar proveedor por nombre
+                for (Supplier supplier : suppliers) {
+                    if (supplier.getName().equals(supplierName)) {
+                        Log.d(TAG, "Proveedor encontrado por nombre: " + supplierName);
+                        callback.onSupplierLoaded(supplier);
+                        return;
+                    }
+                }
+
+                Log.w(TAG, "Proveedor no encontrado por nombre: " + supplierName);
+                callback.onSupplierLoaded(null);
+            }
+        });
     }
 
     // ==========================================
@@ -913,6 +989,48 @@ public class PresupuestosFragment extends Fragment {
         @Override
         public int getItemCount() {
             return 2; // Presupuesto Inicial y Gastos Reales
+        }
+    }
+
+    /**
+     * Enviar formulario después de obtener el supplier ID - MÉTODO NUEVO
+     */
+    private void submitFormWithSupplier(boolean isExpense, BudgetItemCreateUpdateRequest editItem,
+                                        BudgetItemCreateUpdateRequest request, AlertDialog dialog) {
+        Log.d(TAG, "submitFormWithSupplier - Enviando formulario con supplier ID: " + request.getSupplierId());
+
+        try {
+            // Convertir a Map para el ViewModel
+            Map<String, Object> requestMap = budgetRequestToMap(request);
+
+            // Enviar request usando los métodos correctos del ViewModel
+            if (editItem != null) {
+                // Actualizar item existente
+                if (isExpense) {
+                    // TODO: Implementar updateExpenseReal cuando esté disponible
+                    presupuestosViewModel.addExpenseReal(requestMap);
+                    showSuccessMessage("Gasto actualizado exitosamente");
+                } else {
+                    presupuestosViewModel.updateBudgetItem(editItem.getId(), requestMap);
+                    showSuccessMessage("Item actualizado exitosamente");
+                }
+            } else {
+                // Crear nuevo item
+                if (isExpense) {
+                    presupuestosViewModel.addExpenseReal(requestMap);
+                    showSuccessMessage("Gasto añadido exitosamente");
+                } else {
+                    presupuestosViewModel.addItemToBudget(requestMap);
+                    showSuccessMessage("Item añadido exitosamente");
+                }
+            }
+
+            // Cerrar diálogo solo si el envío fue exitoso
+            dialog.dismiss();
+
+        } catch (Exception e) {
+            Log.e(TAG, "Error al enviar formulario: " + e.getMessage(), e);
+            showErrorMessage("Error al procesar el formulario: " + e.getMessage());
         }
     }
 }

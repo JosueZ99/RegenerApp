@@ -10,6 +10,7 @@ import androidx.lifecycle.MutableLiveData;
 
 import com.regenerarestudio.regenerapp.data.api.ApiClient;
 import com.regenerarestudio.regenerapp.data.api.ApiService;
+import com.regenerarestudio.regenerapp.data.models.Supplier;
 import com.regenerarestudio.regenerapp.data.responses.PaginatedResponse;
 
 import java.util.ArrayList;
@@ -521,5 +522,99 @@ public class PresupuestosViewModel extends AndroidViewModel {
         expensesRealLiveData.setValue(null);
         errorLiveData.setValue(null);
         currentProjectId = null;
+    }
+
+    // ==========================================
+    // MÉTODOS PARA PROVEEDORES
+    // ==========================================
+
+    /**
+     * Interfaz para callback de proveedores
+     */
+    public interface SuppliersCallback {
+        void onSuppliersLoaded(List<Supplier> suppliers);
+        void onError(String error);
+    }
+
+    /**
+     * Interfaz para callback de proveedor individual
+     */
+    public interface SupplierCallback {
+        void onSupplierLoaded(Supplier supplier);
+        void onError(String error);
+    }
+
+    /**
+     * Cargar todos los proveedores activos
+     */
+    public void loadAllSuppliers(SuppliersCallback callback) {
+        Log.d(TAG, "loadAllSuppliers - Cargando proveedores desde API");
+
+        Call<PaginatedResponse<Supplier>> call = apiService.getSuppliers(
+                null,    // search
+                null,    // supplier_type
+                null,    // city
+                null,    // is_preferred
+                true     // is_active (solo proveedores activos)
+        );
+
+        call.enqueue(new Callback<PaginatedResponse<Supplier>>() {
+            @Override
+            public void onResponse(@NonNull Call<PaginatedResponse<Supplier>> call,
+                                   @NonNull Response<PaginatedResponse<Supplier>> response) {
+
+                if (response.isSuccessful() && response.body() != null) {
+                    List<Supplier> suppliers = response.body().getResults();
+                    Log.d(TAG, "Proveedores cargados exitosamente: " + (suppliers != null ? suppliers.size() : 0));
+
+                    if (suppliers != null) {
+                        callback.onSuppliersLoaded(suppliers);
+                    } else {
+                        callback.onSuppliersLoaded(new ArrayList<>());
+                    }
+                } else {
+                    String error = "Error al cargar proveedores: " + response.code();
+                    Log.e(TAG, error);
+                    callback.onError(error);
+                }
+            }
+
+            @Override
+            public void onFailure(@NonNull Call<PaginatedResponse<Supplier>> call, @NonNull Throwable t) {
+                String error = "Error de conexión al cargar proveedores: " + t.getMessage();
+                Log.e(TAG, error, t);
+                callback.onError(error);
+            }
+        });
+    }
+
+    /**
+     * Cargar proveedor por ID
+     */
+    public void loadSupplierById(Long supplierId, SupplierCallback callback) {
+        Log.d(TAG, "loadSupplierById - ID: " + supplierId);
+
+        Call<Supplier> call = apiService.getSupplier(supplierId);
+
+        call.enqueue(new Callback<Supplier>() {
+            @Override
+            public void onResponse(@NonNull Call<Supplier> call, @NonNull Response<Supplier> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    Log.d(TAG, "Proveedor cargado exitosamente: " + response.body().getName());
+                    callback.onSupplierLoaded(response.body());
+                } else {
+                    String error = "Error al cargar proveedor por ID: " + response.code();
+                    Log.e(TAG, error);
+                    callback.onError(error);
+                }
+            }
+
+            @Override
+            public void onFailure(@NonNull Call<Supplier> call, @NonNull Throwable t) {
+                String error = "Error de conexión al cargar proveedor: " + t.getMessage();
+                Log.e(TAG, error, t);
+                callback.onError(error);
+            }
+        });
     }
 }

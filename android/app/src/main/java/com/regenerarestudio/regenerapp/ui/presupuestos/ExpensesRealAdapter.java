@@ -10,6 +10,7 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.regenerarestudio.regenerapp.R;
+import com.regenerarestudio.regenerapp.utils.BudgetCategoryTranslations;
 
 import java.text.NumberFormat;
 import java.util.List;
@@ -124,6 +125,9 @@ public class ExpensesRealAdapter extends RecyclerView.Adapter<ExpensesRealAdapte
         }
 
         public void bind(ExpensesRealTableFragment.ExpenseItem item) {
+            // ELIMINADO: Código de categoría porque tvCategoryExpense no está declarado
+            // Si necesitas mostrar categorías en gastos reales, agrega tvCategoryExpense al ViewHolder
+
             // Información básica
             tvMaterialNameExpense.setText(item.getMaterialName());
             tvMaterialCode.setText(item.getMaterialCode());
