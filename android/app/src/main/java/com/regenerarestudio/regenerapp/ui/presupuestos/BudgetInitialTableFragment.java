@@ -46,62 +46,211 @@ public class BudgetInitialTableFragment extends Fragment {
         return binding.getRoot();
     }
 
+    /**
+     * onViewCreated mejorado
+     */
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
         Log.d(TAG, "onViewCreated - Inicializando BudgetInitialTableFragment");
 
-        initializeViews();
-        setupRecyclerView();
-        showEmptyState();
+        try {
+            initializeViews();
+            setupRecyclerView();
+            showEmptyState();
+
+            Log.d(TAG, "Inicialización completada exitosamente");
+        } catch (Exception e) {
+            Log.e(TAG, "Error en onViewCreated: " + e.getMessage(), e);
+        }
     }
 
+    /**
+     * Inicialización mejorada de vistas
+     */
     private void initializeViews() {
-        recyclerView = binding.rvBudgetInitial;
-        budgetItems = new ArrayList<>();
+        if (binding == null) {
+            Log.e(TAG, "Error: binding es null en initializeViews");
+            return;
+        }
 
-        Log.d(TAG, "Vistas inicializadas");
+        // Inicializar RecyclerView
+        recyclerView = binding.rvBudgetInitial;
+
+        // Verificar que el RecyclerView existe en el layout
+        if (recyclerView == null) {
+            Log.e(TAG, "Error: No se pudo encontrar rv_budget_initial en el layout");
+            return;
+        }
+
+        // Inicializar lista de items
+        if (budgetItems == null) {
+            budgetItems = new ArrayList<>();
+        }
+
+        Log.d(TAG, "Vistas inicializadas correctamente");
     }
 
+    /**
+     * Configuración mejorada del RecyclerView
+     */
     private void setupRecyclerView() {
-        Log.d(TAG, "RecyclerView configurado");
+        Log.d(TAG, "setupRecyclerView: Iniciando configuración");
+
+        if (binding == null) {
+            Log.e(TAG, "setupRecyclerView: binding es null");
+            return;
+        }
+
+        if (binding.rvBudgetInitial == null) {
+            Log.e(TAG, "setupRecyclerView: rvBudgetInitial es null en binding");
+            return;
+        }
+
+        recyclerView = binding.rvBudgetInitial;
+        Log.d(TAG, "setupRecyclerView: RecyclerView obtenido del binding");
+
+        // Verificar que el RecyclerView no sea null
+        if (recyclerView == null) {
+            Log.e(TAG, "setupRecyclerView: RecyclerView es null después de asignación");
+            return;
+        }
+
+        // Verificar visibilidad y dimensiones
+        Log.d(TAG, "setupRecyclerView: Visibilidad inicial: " + recyclerView.getVisibility());
+        recyclerView.post(() -> {
+            Log.d(TAG, "setupRecyclerView: Dimensiones RecyclerView - " +
+                    "Width: " + recyclerView.getWidth() +
+                    ", Height: " + recyclerView.getHeight());
+        });
 
         // Configurar LayoutManager
-        recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
+        LinearLayoutManager layoutManager = new LinearLayoutManager(getContext());
+        recyclerView.setLayoutManager(layoutManager);
+        Log.d(TAG, "setupRecyclerView: LayoutManager configurado");
+
+        // Inicializar lista si es necesaria
+        if (budgetItems == null) {
+            budgetItems = new ArrayList<>();
+            Log.d(TAG, "setupRecyclerView: Lista budgetItems inicializada");
+        }
 
         // Crear y configurar adapter
         adapter = new BudgetInitialAdapter(budgetItems);
         recyclerView.setAdapter(adapter);
+        Log.d(TAG, "setupRecyclerView: Adapter asignado al RecyclerView");
 
-        Log.d(TAG, "Adapter configurado con " + budgetItems.size() + " items");
+        // Configuraciones adicionales para mejor rendimiento
+        recyclerView.setHasFixedSize(false); // Cambiar a false para debugging
+        recyclerView.setItemAnimator(null); // Desactivar animaciones
+
+        // Asegurar visibilidad
+        recyclerView.setVisibility(View.VISIBLE);
+        Log.d(TAG, "setupRecyclerView: Visibilidad establecida a VISIBLE");
+
+        // Verificar adapter
+        RecyclerView.Adapter<?> currentAdapter = recyclerView.getAdapter();
+        if (currentAdapter == null) {
+            Log.e(TAG, "setupRecyclerView: ERROR - Adapter es null después de asignación");
+        } else {
+            Log.d(TAG, "setupRecyclerView: Adapter asignado correctamente. Item count: " +
+                    currentAdapter.getItemCount());
+        }
+
+        Log.d(TAG, "setupRecyclerView: Configuración completada exitosamente");
     }
 
     /**
-     * Mostrar estado vacío cuando no hay datos
+     * Método para forzar refresh del RecyclerView - AGREGAR ESTE MÉTODO
+     */
+    private void forceRecyclerViewRefresh() {
+        Log.d(TAG, "forceRecyclerViewRefresh: Forzando actualización");
+
+        if (recyclerView == null) {
+            Log.e(TAG, "forceRecyclerViewRefresh: RecyclerView es null");
+            return;
+        }
+
+        if (adapter == null) {
+            Log.e(TAG, "forceRecyclerViewRefresh: Adapter es null");
+            return;
+        }
+
+        // Verificar estado actual
+        Log.d(TAG, "forceRecyclerViewRefresh: Items en adapter: " + adapter.getItemCount());
+        Log.d(TAG, "forceRecyclerViewRefresh: Visibilidad RecyclerView: " + recyclerView.getVisibility());
+
+        // Forzar layout
+        recyclerView.post(() -> {
+            Log.d(TAG, "forceRecyclerViewRefresh: Ejecutando en post()");
+
+            // Verificar dimensiones
+            Log.d(TAG, "forceRecyclerViewRefresh: Dimensiones - W:" +
+                    recyclerView.getWidth() + " H:" + recyclerView.getHeight());
+
+            // Forzar layout
+            recyclerView.requestLayout();
+
+            // Scroll para forzar binding
+            recyclerView.scrollToPosition(0);
+
+            Log.d(TAG, "forceRecyclerViewRefresh: Layout y scroll forzados");
+        });
+    }
+
+    /**
+     * Estado vacío mejorado
      */
     private void showEmptyState() {
         Log.d(TAG, "Mostrando estado vacío");
 
         if (recyclerView != null) {
-            recyclerView.setVisibility(View.VISIBLE); // Mantener visible pero sin datos
+            recyclerView.setVisibility(View.VISIBLE); // Mantener visible
+        }
+
+        // Actualizar totales con valores en cero
+        if (binding != null) {
+            if (binding.tvTotalItemsInitial != null) {
+                binding.tvTotalItemsInitial.setText("0 items");
+            }
+            if (binding.tvTotalBudgetInitial != null) {
+                binding.tvTotalBudgetInitial.setText(currencyFormat.format(0.0));
+            }
         }
     }
 
     /**
-     * Mostrar contenido cuando hay datos
+     * Mostrar contenido - VERSIÓN MEJORADA
      */
     private void showContent() {
-        Log.d(TAG, "Mostrando contenido con datos");
+        Log.d(TAG, "showContent: Mostrando contenido con " + budgetItems.size() + " items");
 
         if (recyclerView != null) {
             recyclerView.setVisibility(View.VISIBLE);
+            Log.d(TAG, "showContent: RecyclerView visibilidad establecida a VISIBLE");
+
+            // Verificar en el siguiente frame
+            recyclerView.post(() -> {
+                Log.d(TAG, "showContent: Verificación post - Visibilidad: " + recyclerView.getVisibility());
+                Log.d(TAG, "showContent: Verificación post - Items en adapter: " +
+                        (adapter != null ? adapter.getItemCount() : "adapter null"));
+            });
+        } else {
+            Log.e(TAG, "showContent: RecyclerView es null");
+        }
+
+        // Asegurar que el binding esté disponible
+        if (binding != null && binding.tvTotalItemsInitial != null && binding.tvTotalBudgetInitial != null) {
+            Log.d(TAG, "showContent: Binding disponible para actualizar totales");
+        } else {
+            Log.e(TAG, "showContent: Binding o vistas de totales no disponibles");
         }
     }
 
     /**
      * MÉTODO PRINCIPAL - Actualizar datos del presupuesto desde el ViewModel
-     * Este método es llamado por PresupuestosFragment cuando llegan datos del backend
+     * VERSIÓN CORREGIDA - Sin threading innecesario
      */
     public void updateBudgetData(List<Map<String, Object>> budgetData) {
         if (budgetData == null) {
@@ -133,57 +282,86 @@ public class BudgetInitialTableFragment extends Fragment {
 
         Log.d(TAG, "Convertidos " + budgetItems.size() + " items exitosamente");
 
-        // Hacer la variable final para usar en lambda
-        final double finalTotalAmount = totalAmount;
-
-        // Actualizar UI en el hilo principal
-        if (getActivity() != null) {
-            getActivity().runOnUiThread(() -> {
-                updateUI(finalTotalAmount);
-            });
-        }
+        // CORRECCIÓN: Actualizar UI directamente (ya estamos en el hilo principal)
+        updateUI(totalAmount);
     }
 
     /**
-     * Actualizar la interfaz de usuario
+     * Actualizar UI - VERSIÓN MEJORADA CON DEBUGGING
      */
     private void updateUI(double totalAmount) {
-        // Notificar al adapter que los datos han cambiado
-        if (adapter != null) {
-            adapter.notifyDataSetChanged();
-            Log.d(TAG, "Adapter notificado de cambios");
-        }
+        Log.d(TAG, "updateUI: Iniciando actualización con monto: " + totalAmount);
 
-        // Actualizar totales en la UI
-        updateTotals(budgetItems.size(), totalAmount);
+        try {
+            // Verificar que el fragment aún esté activo
+            if (!isAdded() || getContext() == null) {
+                Log.w(TAG, "updateUI: Fragment no está activo, saltando actualización");
+                return;
+            }
 
-        if (budgetItems.isEmpty()) {
-            Log.d(TAG, "UI actualizada - No hay items para mostrar");
-        } else {
-            Log.d(TAG, "Datos actualizados exitosamente - " + budgetItems.size() + " items");
+            // Notificar al adapter que los datos han cambiado
+            if (adapter != null) {
+                Log.d(TAG, "updateUI: Actualizando adapter con " + budgetItems.size() + " items");
+                adapter.updateItems(budgetItems);
+
+                // Forzar refresh después de un breve delay
+                recyclerView.postDelayed(() -> {
+                    forceRecyclerViewRefresh();
+                }, 100);
+
+            } else {
+                Log.e(TAG, "updateUI: ERROR - Adapter es null");
+            }
+
+            // Actualizar totales en la UI
+            updateTotals(budgetItems.size(), totalAmount);
+
+            // Mostrar el contenido o estado vacío según corresponda
+            if (budgetItems.isEmpty()) {
+                showEmptyState();
+                Log.d(TAG, "updateUI: Mostrando estado vacío");
+            } else {
+                showContent();
+                Log.d(TAG, "updateUI: Mostrando contenido con " + budgetItems.size() + " items");
+            }
+
+        } catch (Exception e) {
+            Log.e(TAG, "updateUI: Error durante actualización", e);
         }
     }
 
+
     /**
-     * Actualizar los totales mostrados en la UI
+     * Actualizar los totales mostrados en la UI - VERSIÓN CORREGIDA
      */
     private void updateTotals(int itemCount, double totalAmount) {
-        Log.d(TAG, "Totales actualizados - Items: " + itemCount + ", Monto: " + totalAmount);
+        Log.d(TAG, "Actualizando totales - Items: " + itemCount + ", Monto: " + totalAmount);
 
         try {
-            // Usar los IDs correctos del layout fragment_table_budget_initial.xml
+            // Verificar que el binding esté disponible
+            if (binding == null) {
+                Log.e(TAG, "Error: binding es null al actualizar totales");
+                return;
+            }
 
             // Actualizar contador de items
             TextView tvTotalItems = binding.tvTotalItemsInitial;
             if (tvTotalItems != null) {
                 String itemsText = itemCount == 1 ? "1 item" : itemCount + " items";
                 tvTotalItems.setText(itemsText);
+                Log.d(TAG, "Total items actualizado: " + itemsText);
+            } else {
+                Log.e(TAG, "tvTotalItemsInitial es null");
             }
 
             // Actualizar total de presupuesto
             TextView tvTotalBudget = binding.tvTotalBudgetInitial;
             if (tvTotalBudget != null) {
-                tvTotalBudget.setText(currencyFormat.format(totalAmount));
+                String totalText = currencyFormat.format(totalAmount);
+                tvTotalBudget.setText(totalText);
+                Log.d(TAG, "Total presupuesto actualizado: " + totalText);
+            } else {
+                Log.e(TAG, "tvTotalBudgetInitial es null");
             }
 
         } catch (Exception e) {

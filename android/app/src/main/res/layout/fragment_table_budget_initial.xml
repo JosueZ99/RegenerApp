@@ -8,7 +8,7 @@
 
     <com.google.android.material.card.MaterialCardView
         android:layout_width="match_parent"
-        android:layout_height="0dp"
+        android:layout_height="wrap_content"
         app:cardCornerRadius="12dp"
         app:cardElevation="4dp"
         app:strokeColor="@color/gray_300"
@@ -16,7 +16,8 @@
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent">
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_margin="8dp">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -52,11 +53,11 @@
                     android:id="@+id/tv_total_items_initial"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="12 items"
+                    android:text="0 items"
                     android:textSize="14sp"
                     android:textColor="@color/white"
                     android:alpha="0.9"
-                    tools:text="12 items" />
+                    tools:text="1 item" />
 
             </LinearLayout>
 
@@ -80,22 +81,19 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:hint="Buscar materiales..."
-                        android:maxLines="1"
-                        android:drawableStart="@drawable/ic_search_24"
-                        android:drawablePadding="8dp" />
+                        android:inputType="text"
+                        android:maxLines="1" />
 
                 </com.google.android.material.textfield.TextInputLayout>
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btn_filter_initial"
-                    android:layout_width="48dp"
-                    android:layout_height="48dp"
-                    android:insetTop="0dp"
-                    android:insetBottom="0dp"
-                    app:icon="@drawable/ic_filter_list_24"
-                    app:iconPadding="0dp"
-                    app:iconGravity="textStart"
-                    style="@style/Widget.MaterialComponents.Button.OutlinedButton" />
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Filtrar"
+                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                    app:iconSize="18dp"
+                    app:icon="@drawable/ic_filter_24" />
 
             </LinearLayout>
 
@@ -115,13 +113,14 @@
                     android:text="Material/Servicio"
                     android:textSize="12sp"
                     android:textStyle="bold"
-                    android:textColor="@color/gray_700" />
+                    android:textColor="@color/gray_700"
+                    android:textAlignment="center" />
 
                 <TextView
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1.5"
-                    android:text="Cant."
+                    android:text="Cantidad"
                     android:textSize="12sp"
                     android:textStyle="bold"
                     android:textColor="@color/gray_700"
@@ -166,14 +165,18 @@
 
             </LinearLayout>
 
-            <!-- Lista de items -->
+            <!-- ✅ CORRECCIÓN CRÍTICA: RecyclerView con altura 0dp + weight -->
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/rv_budget_initial"
                 android:layout_width="match_parent"
                 android:layout_height="0dp"
                 android:layout_weight="1"
                 android:clipToPadding="false"
+                android:paddingTop="8dp"
                 android:paddingBottom="8dp"
+                android:paddingHorizontal="4dp"
+                android:nestedScrollingEnabled="true"
+                android:overScrollMode="ifContentScrolls"
                 tools:listitem="@layout/item_budget_initial" />
 
             <!-- Footer con total -->
@@ -198,11 +201,11 @@
                     android:id="@+id/tv_total_budget_initial"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="$15,750.00"
+                    android:text="$0.00"
                     android:textSize="18sp"
                     android:textStyle="bold"
                     android:textColor="@color/white"
-                    tools:text="$15,750.00" />
+                    tools:text="$607.86" />
 
             </LinearLayout>
 
