@@ -94,18 +94,23 @@ public class PresupuestosViewModel extends AndroidViewModel {
      */
     public void loadAllBudgetData(Long projectId) {
         if (projectId == null || projectId <= 0) {
-            Log.e(TAG, "ID de proyecto inválido: " + projectId);
+            Log.e(TAG, "loadAllBudgetData - ERROR: ID de proyecto inválido: " + projectId);
             errorLiveData.setValue("Error: ID de proyecto inválido");
             return;
         }
 
         currentProjectId = projectId;
 
-        Log.d(TAG, "Cargando datos de presupuestos para proyecto: " + projectId);
+        Log.d(TAG, "loadAllBudgetData - INICIANDO carga completa para proyecto: " + projectId);
 
-        // Solo cargar presupuesto inicial y gastos reales
+        // Cargar presupuesto inicial y gastos reales
+        Log.d(TAG, "loadAllBudgetData - Llamando loadBudgetInitial...");
         loadBudgetInitial(projectId);
+
+        Log.d(TAG, "loadAllBudgetData - Llamando loadExpensesReal...");
         loadExpensesReal(projectId);
+
+        Log.d(TAG, "loadAllBudgetData - Ambas cargas iniciadas");
     }
 
     /**
@@ -165,16 +170,21 @@ public class PresupuestosViewModel extends AndroidViewModel {
      */
     public void loadExpensesReal(Long projectId) {
         if (projectId == null) {
+            Log.e(TAG, "loadExpensesReal - ERROR: ID de proyecto es null");
             errorLiveData.setValue("Error: ID de proyecto es null");
             return;
         }
 
-        Log.d(TAG, "Cargando gastos reales para proyecto: " + projectId);
+        Log.d(TAG, "loadExpensesReal - INICIANDO carga para proyecto: " + projectId);
+        Log.d(TAG, "loadExpensesReal - URL que se llamará: budgets/real-expenses/?project=" + projectId);
 
         isLoadingExpensesLiveData.setValue(true);
         errorLiveData.setValue(null);
 
         Call<PaginatedResponse<Map<String, Object>>> call = apiService.getExpenses(projectId);
+
+        // LOG ADICIONAL: Verificar la URL real que se va a llamar
+        Log.d(TAG, "loadExpensesReal - Request URL: " + call.request().url().toString());
 
         call.enqueue(new Callback<PaginatedResponse<Map<String, Object>>>() {
             @Override
@@ -182,20 +192,44 @@ public class PresupuestosViewModel extends AndroidViewModel {
                                    @NonNull Response<PaginatedResponse<Map<String, Object>>> response) {
                 isLoadingExpensesLiveData.setValue(false);
 
+                Log.d(TAG, "loadExpensesReal - Respuesta HTTP código: " + response.code());
+                Log.d(TAG, "loadExpensesReal - Respuesta exitosa: " + response.isSuccessful());
+                Log.d(TAG, "loadExpensesReal - Body es null: " + (response.body() == null));
+
                 if (response.isSuccessful() && response.body() != null) {
                     PaginatedResponse<Map<String, Object>> paginatedResponse = response.body();
                     List<Map<String, Object>> expenses = paginatedResponse.getResults();
 
+                    Log.d(TAG, "loadExpensesReal - Paginación: count=" + paginatedResponse.getCount() +
+                            ", next=" + paginatedResponse.getNext() +
+                            ", previous=" + paginatedResponse.getPrevious());
+
                     if (expenses != null) {
-                        Log.d(TAG, "Gastos reales cargados exitosamente. Items: " + expenses.size());
+                        Log.d(TAG, "loadExpensesReal - ✅ Gastos cargados exitosamente. Items: " + expenses.size());
+
+                        // LOG ADICIONAL: Mostrar contenido del primer gasto si existe
+                        if (!expenses.isEmpty()) {
+                            Log.d(TAG, "loadExpensesReal - Primer gasto: " + expenses.get(0).toString());
+                        }
+
                         expensesRealLiveData.setValue(expenses);
+                        Log.d(TAG, "loadExpensesReal - Datos asignados a LiveData");
                     } else {
-                        Log.w(TAG, "Lista de gastos reales es null");
+                        Log.w(TAG, "loadExpensesReal - Lista de gastos reales es null");
                         expensesRealLiveData.setValue(new ArrayList<>());
                     }
                 } else {
                     String error = "Error al cargar gastos reales: " + response.code();
-                    Log.e(TAG, error);
+                    if (response.errorBody() != null) {
+                        try {
+                            String errorBody = response.errorBody().string();
+                            Log.e(TAG, "loadExpensesReal - Error body: " + errorBody);
+                            error += " - " + errorBody;
+                        } catch (Exception e) {
+                            Log.e(TAG, "loadExpensesReal - Error al leer error body", e);
+                        }
+                    }
+                    Log.e(TAG, "loadExpensesReal - " + error);
                     errorLiveData.setValue(error);
                 }
             }
@@ -204,7 +238,8 @@ public class PresupuestosViewModel extends AndroidViewModel {
             public void onFailure(@NonNull Call<PaginatedResponse<Map<String, Object>>> call, @NonNull Throwable t) {
                 isLoadingExpensesLiveData.setValue(false);
                 String error = "Error de conexión al cargar gastos reales: " + t.getMessage();
-                Log.e(TAG, error, t);
+                Log.e(TAG, "loadExpensesReal - FAILURE: " + error, t);
+                Log.e(TAG, "loadExpensesReal - Request URL que falló: " + call.request().url().toString());
                 errorLiveData.setValue(error);
             }
         });

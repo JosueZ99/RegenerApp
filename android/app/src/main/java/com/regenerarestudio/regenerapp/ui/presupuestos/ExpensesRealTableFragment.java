@@ -5,6 +5,8 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.PopupMenu;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -12,7 +14,11 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.regenerarestudio.regenerapp.MainActivity;
+import com.regenerarestudio.regenerapp.R;
 import com.regenerarestudio.regenerapp.databinding.FragmentTableExpensesRealBinding;
+import com.regenerarestudio.regenerapp.data.models.BudgetItemCreateUpdateRequest;
 
 import java.text.NumberFormat;
 import java.text.ParseException;
@@ -25,7 +31,7 @@ import java.util.Map;
 
 /**
  * Fragment para la tabla de Gastos Reales
- * Actualizado para usar datos reales del backend Django - IDs VERIFICADOS
+ * Actualizado con funcionalidad CRUD completa
  */
 public class ExpensesRealTableFragment extends Fragment {
 
@@ -118,166 +124,91 @@ public class ExpensesRealTableFragment extends Fragment {
                 (backendData != null ? backendData.size() : 0) + " gastos del backend");
 
         if (backendData == null || backendData.isEmpty()) {
-            // Sin datos del backend
             expenseItems.clear();
             adapter.notifyDataSetChanged();
             showEmptyState();
             return;
         }
 
-        try {
-            // Convertir datos del backend a objetos locales
-            List<ExpenseItem> newExpenseItems = convertBackendDataToExpenseItems(backendData);
-
-            // Actualizar lista y adapter
-            expenseItems.clear();
-            expenseItems.addAll(newExpenseItems);
-            adapter.notifyDataSetChanged();
-
-            // Actualizar totales
-            updateTotals();
-
-            Log.d(TAG, "Datos actualizados exitosamente - " + expenseItems.size() + " gastos");
-
-        } catch (Exception e) {
-            Log.e(TAG, "Error al procesar datos del backend", e);
-            showError("Error al procesar datos de gastos reales");
-        }
-    }
-
-    /**
-     * Convertir datos del backend (Django JSON) a objetos ExpenseItem
-     */
-    private List<ExpenseItem> convertBackendDataToExpenseItems(List<Map<String, Object>> backendData) {
-        List<ExpenseItem> items = new ArrayList<>();
-
-        for (Map<String, Object> itemData : backendData) {
+        // Convertir datos del backend a objetos ExpenseItem locales
+        expenseItems.clear();
+        for (Map<String, Object> expenseData : backendData) {
             try {
-                ExpenseItem expenseItem = createExpenseItemFromBackendData(itemData);
-                if (expenseItem != null) {
-                    items.add(expenseItem);
+                ExpenseItem item = convertBackendDataToExpenseItem(expenseData);
+                if (item != null) {
+                    expenseItems.add(item);
                 }
             } catch (Exception e) {
-                Log.w(TAG, "Error al procesar gasto individual: " + itemData, e);
-                // Continuar con los demás items
+                Log.e(TAG, "Error al convertir dato del backend: " + e.getMessage(), e);
             }
         }
 
-        Log.d(TAG, "Convertidos " + items.size() + " gastos exitosamente");
-        return items;
+        // Actualizar adapter
+        adapter.notifyDataSetChanged();
+
+        // Actualizar totales en la UI
+        updateTotals();
+
+        Log.d(TAG, "updateExpensesData - Procesados " + expenseItems.size() + " gastos exitosamente");
     }
 
     /**
-     * Crear un ExpenseItem desde datos del backend
+     * Convertir datos del backend a ExpenseItem local
      */
-    private ExpenseItem createExpenseItemFromBackendData(Map<String, Object> itemData) {
-        try {
-            // Extraer datos del Map (campo por campo del modelo Django RealExpense)
-            Long id = parseLongFromObject(itemData.get("id"));
-            String description = parseStringFromObject(itemData.get("description"));
-            String category = parseStringFromObject(itemData.get("category"));
-            Double quantity = parseDoubleFromObject(itemData.get("quantity"));
-            String unit = parseStringFromObject(itemData.get("unit"));
-            Double unitPrice = parseDoubleFromObject(itemData.get("unit_price"));
-            Double discountPercentage = parseDoubleFromObject(itemData.get("discount_percentage"));
-            String invoiceNumber = parseStringFromObject(itemData.get("invoice_number"));
-            String purchaseDateStr = parseStringFromObject(itemData.get("purchase_date"));
+    private ExpenseItem convertBackendDataToExpenseItem(Map<String, Object> data) {
+        ExpenseItem item = new ExpenseItem();
 
-            // Datos del proveedor (pueden venir en un objeto anidado)
-            String supplierName = "Sin proveedor";
-            Object supplierData = itemData.get("supplier");
-            if (supplierData instanceof Map) {
-                @SuppressWarnings("unchecked")
-                Map<String, Object> supplier = (Map<String, Object>) supplierData;
-                supplierName = parseStringFromObject(supplier.get("name"));
-            } else if (supplierData instanceof String) {
-                supplierName = (String) supplierData;
-            }
-
-            // Datos del material (pueden venir en un objeto anidado o como string)
-            String materialCode = "SIN-COD";
-            Object materialData = itemData.get("material");
-            if (materialData instanceof Map) {
-                @SuppressWarnings("unchecked")
-                Map<String, Object> material = (Map<String, Object>) materialData;
-                materialCode = parseStringFromObject(material.get("code"));
-                if (materialCode == null) {
-                    materialCode = "SIN-COD";
-                }
-            }
-
-            // Procesar fecha de compra
-            Date purchaseDate = new Date(); // Fecha por defecto
-            String displayDate = displayDateFormatter.format(purchaseDate);
-            String displayTime = displayTimeFormatter.format(purchaseDate);
-
-            if (purchaseDateStr != null && !purchaseDateStr.isEmpty()) {
-                try {
-                    purchaseDate = backendDateFormatter.parse(purchaseDateStr);
-                    displayDate = displayDateFormatter.format(purchaseDate);
-                    displayTime = displayTimeFormatter.format(purchaseDate);
-                } catch (ParseException e) {
-                    Log.w(TAG, "Error al parsear fecha: " + purchaseDateStr, e);
-                }
-            }
-
-            // Crear el objeto ExpenseItem
-            ExpenseItem expenseItem = new ExpenseItem(
-                    id != null ? id : 0L,
-                    description != null ? description : "Sin descripción",
-                    materialCode,
-                    quantity != null ? quantity : 0.0,
-                    unit != null ? unit : "Unidad",
-                    unitPrice != null ? unitPrice : 0.0,
-                    discountPercentage != null ? discountPercentage : 0.0,
-                    supplierName,
-                    invoiceNumber != null ? invoiceNumber : "Sin factura",
-                    purchaseDate,
-                    displayDate,
-                    displayTime
-            );
-
-            Log.v(TAG, "Gasto creado: " + expenseItem.getMaterialName() + " - " +
-                    currencyFormat.format(expenseItem.getTotalPrice()));
-
-            return expenseItem;
-
-        } catch (Exception e) {
-            Log.e(TAG, "Error al crear ExpenseItem desde datos del backend: " + itemData, e);
-            return null;
+        // Parsear ID
+        Object idObj = data.get("id");
+        if (idObj instanceof Number) {
+            item.setId(((Number) idObj).longValue());
         }
-    }
 
-    // ==========================================
-    // MÉTODOS DE CONVERSIÓN SEGUROS
-    // ==========================================
+        // Parsear campos de texto
+        item.setMaterialName(parseStringFromObject(data.get("description")));
+        item.setMaterialCode(parseStringFromObject(data.get("material_code")));
+        item.setUnit(parseStringFromObject(data.get("unit")));
+        item.setSupplierName(parseStringFromObject(data.get("supplier_name")));
+        item.setInvoiceNumber(parseStringFromObject(data.get("invoice_number")));
 
-    private Long parseLongFromObject(Object obj) {
-        if (obj == null) return null;
-        if (obj instanceof Number) return ((Number) obj).longValue();
-        if (obj instanceof String) {
+        // Parsear campos numéricos
+        item.setQuantity(parseDoubleFromObject(data.get("quantity"), 0.0));
+        item.setUnitPrice(parseDoubleFromObject(data.get("unit_price"), 0.0));
+        item.setDiscountPercentage(parseDoubleFromObject(data.get("discount_percentage"), 0.0));
+
+        // Parsear fecha de compra
+        String purchaseDateStr = parseStringFromObject(data.get("purchase_date"));
+        if (purchaseDateStr != null) {
             try {
-                return Long.parseLong((String) obj);
-            } catch (NumberFormatException e) {
-                Log.w(TAG, "Error al convertir string a long: " + obj);
-                return null;
+                Date purchaseDate = backendDateFormatter.parse(purchaseDateStr);
+                item.setPurchaseDate(purchaseDate);
+                item.setDisplayDate(displayDateFormatter.format(purchaseDate));
+                item.setDisplayTime(displayTimeFormatter.format(purchaseDate));
+            } catch (ParseException e) {
+                Log.w(TAG, "Error al parsear fecha de compra: " + purchaseDateStr);
+                item.setDisplayDate("Fecha inválida");
+                item.setDisplayTime("--:--");
             }
+        } else {
+            item.setDisplayDate("Sin fecha");
+            item.setDisplayTime("--:--");
         }
-        return null;
+
+        return item;
     }
 
-    private Double parseDoubleFromObject(Object obj) {
-        if (obj == null) return null;
+    private double parseDoubleFromObject(Object obj, double defaultValue) {
+        if (obj == null) return defaultValue;
         if (obj instanceof Number) return ((Number) obj).doubleValue();
         if (obj instanceof String) {
             try {
                 return Double.parseDouble((String) obj);
             } catch (NumberFormatException e) {
                 Log.w(TAG, "Error al convertir string a double: " + obj);
-                return null;
+                return defaultValue;
             }
         }
-        return null;
+        return defaultValue;
     }
 
     private String parseStringFromObject(Object obj) {
@@ -324,19 +255,189 @@ public class ExpensesRealTableFragment extends Fragment {
     }
 
     // ==========================================
-    // EVENTOS DE CLICKS
+    // EVENTOS DE CLICKS - ACTUALIZADO CON CRUD
     // ==========================================
 
     private void onItemClick(ExpenseItem item) {
         Log.d(TAG, "Click en gasto: " + item.getMaterialName());
-        // TODO: Mostrar detalles del gasto o permitir edición
-        Toast.makeText(requireContext(), "Ver detalles: " + item.getMaterialName(), Toast.LENGTH_SHORT).show();
+        // Al hacer click directo, mostrar detalles
+        handleViewExpenseDetails(item);
     }
 
+    /**
+     * Manejar click en menú de opciones de cada fila - NUEVO
+     */
     private void onItemMenuClick(ExpenseItem item) {
         Log.d(TAG, "Menú solicitado para gasto: " + item.getMaterialName());
-        // TODO: Mostrar menú contextual (ver factura, editar, eliminar, etc.)
-        Toast.makeText(requireContext(), "Menú para: " + item.getMaterialName(), Toast.LENGTH_SHORT).show();
+        showItemOptionsMenu(item);
+    }
+
+    /**
+     * Mostrar menú de opciones para un gasto real - NUEVO
+     */
+    private void showItemOptionsMenu(ExpenseItem item) {
+        PopupMenu popupMenu = new PopupMenu(getContext(), binding.rvExpensesReal);
+        popupMenu.getMenuInflater().inflate(R.menu.menu_expense_item_options, popupMenu.getMenu());
+
+        popupMenu.setOnMenuItemClickListener(menuItem -> {
+            int itemId = menuItem.getItemId();
+
+            if (itemId == R.id.action_edit_expense) {
+                handleEditExpense(item);
+                return true;
+            } else if (itemId == R.id.action_delete_expense) {
+                handleDeleteExpense(item);
+                return true;
+            } else if (itemId == R.id.action_view_details_expense) {
+                handleViewExpenseDetails(item);
+                return true;
+            }
+
+            return false;
+        });
+
+        popupMenu.show();
+    }
+
+    /**
+     * Manejar edición de gasto real - NUEVO
+     */
+    private void handleEditExpense(ExpenseItem item) {
+        Log.d(TAG, "handleEditExpense: Editando gasto - " + item.getMaterialName());
+
+        if (getParentFragment() instanceof PresupuestosFragment) {
+            PresupuestosFragment parentFragment = (PresupuestosFragment) getParentFragment();
+
+            // Crear objeto para edición con los datos del gasto real
+            BudgetItemCreateUpdateRequest editRequest = new BudgetItemCreateUpdateRequest();
+            editRequest.setId(item.getId());
+            editRequest.setProjectId(getCurrentProjectId());
+            editRequest.setDescription(item.getMaterialName());
+            editRequest.setQuantity(item.getQuantity());
+            editRequest.setUnitPrice(item.getUnitPrice());
+            editRequest.setUnit(item.getUnit());
+            editRequest.setCategory("construction"); // O determinar la categoría apropiada
+
+            // Campos específicos de gastos reales
+            editRequest.setDiscount(item.getDiscountPercentage());
+            editRequest.setPurchaseDate(formatDateForBackend(item.getPurchaseDate()));
+
+            // Llamar método del padre para mostrar formulario de gastos reales
+            parentFragment.showManualEntryForm(true, editRequest);
+        }
+    }
+
+    /**
+     * Manejar eliminación de gasto real - NUEVO
+     */
+    private void handleDeleteExpense(ExpenseItem item) {
+        Log.d(TAG, "handleDeleteExpense: Eliminando gasto - " + item.getMaterialName());
+        showDeleteConfirmationDialog(item);
+    }
+
+    /**
+     * Manejar visualización de detalles - NUEVO
+     */
+    private void handleViewExpenseDetails(ExpenseItem item) {
+        Log.d(TAG, "handleViewExpenseDetails: Mostrando detalles - " + item.getMaterialName());
+        showExpenseDetailsDialog(item);
+    }
+
+    /**
+     * Mostrar diálogo de confirmación para eliminar gasto - NUEVO
+     */
+    private void showDeleteConfirmationDialog(ExpenseItem item) {
+        double finalAmount = (item.getQuantity() * item.getUnitPrice()) * (1 - item.getDiscountPercentage() / 100);
+
+        new MaterialAlertDialogBuilder(getContext())
+                .setTitle("Confirmar eliminación")
+                .setMessage("¿Está seguro de que desea eliminar este gasto?\n\n" +
+                        "Material: " + item.getMaterialName() + "\n" +
+                        "Cantidad: " + item.getQuantity() + " " + item.getUnit() + "\n" +
+                        "Total pagado: " + currencyFormat.format(finalAmount))
+                .setIcon(R.drawable.ic_warning_24)
+                .setPositiveButton("Eliminar", (dialog, which) -> {
+                    deleteExpenseFromBackend(item);
+                })
+                .setNegativeButton("Cancelar", null)
+                .show();
+    }
+
+    /**
+     * Eliminar gasto del backend usando el método correcto del ViewModel - NUEVO
+     */
+    private void deleteExpenseFromBackend(ExpenseItem item) {
+        if (getParentFragment() instanceof PresupuestosFragment) {
+            PresupuestosFragment parentFragment = (PresupuestosFragment) getParentFragment();
+            PresupuestosViewModel viewModel = parentFragment.getPresupuestosViewModel();
+
+            // Usar el método correcto del ViewModel
+            viewModel.deleteExpenseReal(item.getId());
+
+            // Mostrar mensaje de confirmación
+            Toast.makeText(getContext(), "Eliminando gasto...", Toast.LENGTH_SHORT).show();
+
+            // El ViewModel ya maneja la recarga automática de datos
+            Log.d(TAG, "Eliminación solicitada para item ID: " + item.getId());
+        }
+    }
+
+    /**
+     * Mostrar diálogo con detalles del gasto - NUEVO
+     */
+    private void showExpenseDetailsDialog(ExpenseItem item) {
+        View dialogView = LayoutInflater.from(getContext()).inflate(R.layout.dialog_expense_details, null);
+
+        // Referencias a las vistas del diálogo
+        TextView tvMaterial = dialogView.findViewById(R.id.tv_detail_material);
+        TextView tvQuantity = dialogView.findViewById(R.id.tv_detail_quantity);
+        TextView tvUnitPrice = dialogView.findViewById(R.id.tv_detail_unit_price);
+        TextView tvSubtotal = dialogView.findViewById(R.id.tv_detail_subtotal);
+        TextView tvDiscount = dialogView.findViewById(R.id.tv_detail_discount);
+        TextView tvFinalAmount = dialogView.findViewById(R.id.tv_detail_final_amount);
+        TextView tvSupplier = dialogView.findViewById(R.id.tv_detail_supplier);
+        TextView tvInvoice = dialogView.findViewById(R.id.tv_detail_invoice);
+        TextView tvPurchaseDate = dialogView.findViewById(R.id.tv_detail_purchase_date);
+
+        // Calcular valores
+        double subtotal = item.getQuantity() * item.getUnitPrice();
+        double discountAmount = subtotal * (item.getDiscountPercentage() / 100);
+        double finalAmount = subtotal - discountAmount;
+
+        // Llenar datos
+        tvMaterial.setText(item.getMaterialName());
+        tvQuantity.setText(item.getQuantity() + " " + item.getUnit());
+        tvUnitPrice.setText(currencyFormat.format(item.getUnitPrice()));
+        tvSubtotal.setText(currencyFormat.format(subtotal));
+        tvDiscount.setText(item.getDiscountPercentage() + "% (" + currencyFormat.format(discountAmount) + ")");
+        tvFinalAmount.setText(currencyFormat.format(finalAmount));
+        tvSupplier.setText(item.getSupplierName() != null ? item.getSupplierName() : "No especificado");
+        tvInvoice.setText(item.getInvoiceNumber() != null ? item.getInvoiceNumber() : "No especificado");
+        tvPurchaseDate.setText(item.getDisplayDate());
+
+        new MaterialAlertDialogBuilder(getContext())
+                .setTitle("Detalles del Gasto")
+                .setView(dialogView)
+                .setPositiveButton("Cerrar", null)
+                .show();
+    }
+
+    /**
+     * Obtener ID del proyecto actual - NUEVO
+     */
+    private long getCurrentProjectId() {
+        if (getParentFragment() instanceof PresupuestosFragment) {
+            return ((PresupuestosFragment) getParentFragment()).getProjectId();
+        }
+        return -1;
+    }
+
+    /**
+     * Convertir fecha para el backend - NUEVO
+     */
+    private String formatDateForBackend(Date date) {
+        if (date == null) return null;
+        return backendDateFormatter.format(date);
     }
 
     // ==========================================
@@ -388,6 +489,10 @@ public class ExpensesRealTableFragment extends Fragment {
         private String displayDate;
         private String displayTime;
 
+        // Constructor vacío
+        public ExpenseItem() {}
+
+        // Constructor completo (compatible con adapter)
         public ExpenseItem(long id, String materialName, String materialCode, double quantity,
                            String unit, double unitPrice, double discountPercentage,
                            String supplierName, String invoiceNumber, Date purchaseDate,
@@ -406,6 +511,7 @@ public class ExpensesRealTableFragment extends Fragment {
             this.displayTime = displayTime;
         }
 
+        // Métodos calculados (requeridos por el adapter)
         public double getTotalPrice() {
             double subtotal = quantity * unitPrice;
             double discount = subtotal * (discountPercentage / 100);
@@ -417,39 +523,51 @@ public class ExpensesRealTableFragment extends Fragment {
             return subtotal * (discountPercentage / 100);
         }
 
-        // Getters
+        // Getters y Setters
         public long getId() { return id; }
-        public String getMaterialName() { return materialName; }
-        public String getMaterialCode() { return materialCode; }
-        public double getQuantity() { return quantity; }
-        public String getUnit() { return unit; }
-        public double getUnitPrice() { return unitPrice; }
-        public double getDiscountPercentage() { return discountPercentage; }
-        public String getSupplierName() { return supplierName; }
-        public String getInvoiceNumber() { return invoiceNumber; }
-        public Date getPurchaseDate() { return purchaseDate; }
-        public String getDisplayDate() { return displayDate; }
-        public String getDisplayTime() { return displayTime; }
+        public void setId(long id) { this.id = id; }
 
-        // Setters (para edición)
+        public String getMaterialName() { return materialName; }
+        public void setMaterialName(String materialName) { this.materialName = materialName; }
+
+        public String getMaterialCode() { return materialCode; }
+        public void setMaterialCode(String materialCode) { this.materialCode = materialCode; }
+
+        public double getQuantity() { return quantity; }
         public void setQuantity(double quantity) { this.quantity = quantity; }
+
+        public String getUnit() { return unit; }
+        public void setUnit(String unit) { this.unit = unit; }
+
+        public double getUnitPrice() { return unitPrice; }
         public void setUnitPrice(double unitPrice) { this.unitPrice = unitPrice; }
+
+        public double getDiscountPercentage() { return discountPercentage; }
         public void setDiscountPercentage(double discountPercentage) { this.discountPercentage = discountPercentage; }
+
+        public String getSupplierName() { return supplierName; }
         public void setSupplierName(String supplierName) { this.supplierName = supplierName; }
+
+        public String getInvoiceNumber() { return invoiceNumber; }
         public void setInvoiceNumber(String invoiceNumber) { this.invoiceNumber = invoiceNumber; }
+
+        public Date getPurchaseDate() { return purchaseDate; }
+        public void setPurchaseDate(Date purchaseDate) { this.purchaseDate = purchaseDate; }
+
+        public String getDisplayDate() { return displayDate; }
+        public void setDisplayDate(String displayDate) { this.displayDate = displayDate; }
+
+        public String getDisplayTime() { return displayTime; }
+        public void setDisplayTime(String displayTime) { this.displayTime = displayTime; }
 
         @Override
         public String toString() {
             return "ExpenseItem{" +
                     "id=" + id +
                     ", materialName='" + materialName + '\'' +
-                    ", materialCode='" + materialCode + '\'' +
                     ", quantity=" + quantity +
-                    ", unit='" + unit + '\'' +
                     ", unitPrice=" + unitPrice +
                     ", discountPercentage=" + discountPercentage +
-                    ", supplierName='" + supplierName + '\'' +
-                    ", invoiceNumber='" + invoiceNumber + '\'' +
                     ", displayDate='" + displayDate + '\'' +
                     ", displayTime='" + displayTime + '\'' +
                     '}';

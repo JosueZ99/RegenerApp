@@ -72,21 +72,32 @@ public class PresupuestosFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
+        Log.d(TAG, "===== onViewCreated INICIANDO =====");
+
         // Inicializar ViewModel
         presupuestosViewModel = new ViewModelProvider(this).get(PresupuestosViewModel.class);
+        Log.d(TAG, "onViewCreated - ViewModel inicializado: " + (presupuestosViewModel != null));
 
         // Obtener datos del proyecto desde MainActivity
         getProjectDataFromActivity();
+        Log.d(TAG, "onViewCreated - Proyecto obtenido: ID=" + projectId + ", Nombre=" + projectName);
 
         // Configurar componentes de la UI
+        Log.d(TAG, "onViewCreated - Configurando ViewPager...");
         setupViewPager();
+
+        Log.d(TAG, "onViewCreated - Configurando FAB buttons...");
         setupFabButtons();
+
+        Log.d(TAG, "onViewCreated - Configurando observers...");
         observeViewModel();
 
         // Cargar datos iniciales
+        Log.d(TAG, "onViewCreated - Iniciando carga de datos...");
         loadAllBudgetData();
 
-        Log.d(TAG, "PresupuestosFragment configurado correctamente - SIN resumen financiero");
+        Log.d(TAG, "onViewCreated - PresupuestosFragment configurado correctamente");
+        Log.d(TAG, "===== onViewCreated FINALIZADO =====");
     }
 
     // ==========================================
@@ -200,14 +211,22 @@ public class PresupuestosFragment extends Fragment {
      * Cargar todos los datos de presupuestos del backend
      */
     private void loadAllBudgetData() {
+        Log.d(TAG, "===== loadAllBudgetData INICIANDO =====");
+
         if (projectId <= 0) {
-            Log.e(TAG, "ID de proyecto inválido: " + projectId);
+            Log.e(TAG, "loadAllBudgetData - ERROR: ID de proyecto inválido: " + projectId);
             showError("Error: ID de proyecto inválido");
             return;
         }
 
-        Log.d(TAG, "Cargando todos los datos de presupuestos para proyecto: " + projectId);
+        Log.d(TAG, "loadAllBudgetData - Validación passed, llamando ViewModel...");
+        Log.d(TAG, "loadAllBudgetData - ProjectId: " + projectId);
+        Log.d(TAG, "loadAllBudgetData - ViewModel: " + (presupuestosViewModel != null ? "OK" : "NULL"));
+
         presupuestosViewModel.loadAllBudgetData(projectId);
+
+        Log.d(TAG, "loadAllBudgetData - Llamada al ViewModel completada");
+        Log.d(TAG, "===== loadAllBudgetData FINALIZADO =====");
     }
 
     /**
@@ -225,22 +244,49 @@ public class PresupuestosFragment extends Fragment {
             if (pagerAdapter != null) {
                 Fragment currentFragment = getChildFragmentManager().findFragmentByTag("f0");
                 if (currentFragment instanceof BudgetInitialTableFragment) {
+                    Log.d(TAG, "Observer: Enviando datos a BudgetInitialTableFragment");
                     ((BudgetInitialTableFragment) currentFragment).updateBudgetData(budgetItems);
+                } else {
+                    Log.w(TAG, "Observer: Fragment f0 no es BudgetInitialTableFragment o es null");
                 }
+            } else {
+                Log.w(TAG, "Observer: pagerAdapter es null");
             }
         });
 
-        // Observar gastos reales
+        // Observar gastos reales - CON LOGS ADICIONALES DE DIAGNÓSTICO
         presupuestosViewModel.getExpensesReal().observe(getViewLifecycleOwner(), expenses -> {
             Log.d(TAG, "Observer: Gastos reales recibidos - Items: " +
                     (expenses != null ? expenses.size() : 0));
 
-            // Notificar al fragment de la tabla de gastos
+            // LOG ADICIONAL: Mostrar contenido de los datos
+            if (expenses != null && !expenses.isEmpty()) {
+                Log.d(TAG, "Observer: Primer gasto real = " + expenses.get(0).toString());
+            } else {
+                Log.w(TAG, "Observer: Lista de gastos reales está vacía o es null");
+            }
+
+            // Notificar al fragment de la tabla de gastos - CON LOGS ADICIONALES
             if (pagerAdapter != null) {
+                Log.d(TAG, "Observer: pagerAdapter disponible, buscando fragment f1");
                 Fragment currentFragment = getChildFragmentManager().findFragmentByTag("f1");
-                if (currentFragment instanceof ExpensesRealTableFragment) {
-                    ((ExpensesRealTableFragment) currentFragment).updateExpensesData(expenses);
+
+                if (currentFragment != null) {
+                    Log.d(TAG, "Observer: Fragment f1 encontrado: " + currentFragment.getClass().getSimpleName());
+
+                    if (currentFragment instanceof ExpensesRealTableFragment) {
+                        Log.d(TAG, "Observer: Enviando " + (expenses != null ? expenses.size() : 0) +
+                                " gastos a ExpensesRealTableFragment");
+                        ((ExpensesRealTableFragment) currentFragment).updateExpensesData(expenses);
+                    } else {
+                        Log.e(TAG, "Observer: Fragment f1 NO es ExpensesRealTableFragment, es: " +
+                                currentFragment.getClass().getSimpleName());
+                    }
+                } else {
+                    Log.e(TAG, "Observer: Fragment f1 es NULL - No se puede enviar datos");
                 }
+            } else {
+                Log.e(TAG, "Observer: pagerAdapter es NULL");
             }
         });
 
@@ -255,13 +301,45 @@ public class PresupuestosFragment extends Fragment {
             updateLoadingState(isLoading);
         });
 
-        // Observar errores
+        // Observar errores - CON LOGS ADICIONALES
         presupuestosViewModel.getError().observe(getViewLifecycleOwner(), error -> {
             if (error != null && !error.isEmpty()) {
                 Log.e(TAG, "Observer: Error recibido - " + error);
                 showError(error);
+            } else {
+                Log.d(TAG, "Observer: No hay errores");
             }
         });
+    }
+
+    /**
+     * Método helper para enviar datos al fragment de gastos reales con retry
+     */
+    private void sendDataToExpensesFragment(List<Map<String, Object>> expenses) {
+        Log.d(TAG, "sendDataToExpensesFragment - Intentando enviar datos...");
+
+        if (pagerAdapter != null) {
+            Fragment currentFragment = getChildFragmentManager().findFragmentByTag("f1");
+
+            if (currentFragment instanceof ExpensesRealTableFragment) {
+                Log.d(TAG, "sendDataToExpensesFragment - Fragment encontrado, enviando datos");
+                ((ExpensesRealTableFragment) currentFragment).updateExpensesData(expenses);
+            } else {
+                Log.w(TAG, "sendDataToExpensesFragment - Fragment no listo, reintentando en 500ms");
+                // Reintentar después de un pequeño delay
+                new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> {
+                    Fragment retryFragment = getChildFragmentManager().findFragmentByTag("f1");
+                    if (retryFragment instanceof ExpensesRealTableFragment) {
+                        Log.d(TAG, "sendDataToExpensesFragment - RETRY exitoso, enviando datos");
+                        ((ExpensesRealTableFragment) retryFragment).updateExpensesData(expenses);
+                    } else {
+                        Log.e(TAG, "sendDataToExpensesFragment - RETRY falló, fragment aún no disponible");
+                    }
+                }, 500);
+            }
+        } else {
+            Log.e(TAG, "sendDataToExpensesFragment - pagerAdapter es NULL");
+        }
     }
 
     // ==========================================
@@ -744,6 +822,18 @@ public class PresupuestosFragment extends Fragment {
     public void addItemFromCalculation(Map<String, Object> budgetItem) {
         Log.d(TAG, "Agregando item desde calculadora");
         presupuestosViewModel.addItemToBudget(budgetItem);
+    }
+
+    // ==========================================
+    // MÉTODOS PÚBLICOS ADICIONALES PARA CRUD DE GASTOS REALES
+    // ==========================================
+
+    /**
+     * Obtener ID del proyecto actual (para fragments hijos)
+     * NUEVO - Necesario para ExpensesRealTableFragment
+     */
+    public long getProjectId() {
+        return projectId;
     }
 
     // ==========================================

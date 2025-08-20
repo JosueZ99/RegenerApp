@@ -68,6 +68,7 @@
 
     <!-- Alerts y notificaciones -->
     <color name="success">#4CAF50</color>
+    <color name="success_light">#E8F5E8</color>
     <color name="warning">#FF9800</color>
     <color name="error">#F44336</color>
     <color name="info">#2196F3</color>
@@ -89,4 +90,7 @@
     <color name="purple_700">#FF3700B3</color>
     <color name="teal_200">#FF03DAC5</color>
     <color name="teal_700">#FF018786</color>
+
+    <color name="text_primary">#212121</color>
+    <color name="text_secondary">#757575</color>
 </resources>
