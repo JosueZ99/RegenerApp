@@ -539,55 +539,113 @@ public class BudgetInitialTableFragment extends Fragment {
         BudgetItem item = new BudgetItem();
 
         // ID
-        if (itemData.get("id") instanceof Number) {
-            item.setId(((Number) itemData.get("id")).longValue());
-        }
+        item.setId(parseLongFromObject(itemData.get("id")));
 
-        // 🟢 PROJECT ID - AGREGAR ESTA LÍNEA
+        // PROJECT ID
         item.setProjectId(getCurrentProjectId());
 
         // Descripción
-        item.setDescription((String) itemData.get("description"));
+        item.setDescription(parseStringFromObject(itemData.get("description")));
 
         // Categoría
-        item.setCategory((String) itemData.get("category"));
-        item.setCategoryDisplay((String) itemData.get("category_display"));
+        item.setCategory(parseStringFromObject(itemData.get("category")));
+        item.setCategoryDisplay(parseStringFromObject(itemData.get("category_display")));
 
         // Espacios
-        item.setSpaces((String) itemData.get("spaces"));
+        item.setSpaces(parseStringFromObject(itemData.get("spaces")));
 
-        // Cantidad
-        if (itemData.get("quantity") instanceof Number) {
-            item.setQuantity(((Number) itemData.get("quantity")).doubleValue());
-        }
+        // Cantidad - usando método auxiliar
+        Double quantity = parseDoubleFromObject(itemData.get("quantity"));
+        item.setQuantity(quantity != null ? quantity : 1.0);
 
         // Unidad
-        item.setUnit((String) itemData.get("unit"));
+        item.setUnit(parseStringFromObject(itemData.get("unit")));
 
-        // Precio unitario
-        if (itemData.get("unit_price") instanceof Number) {
-            item.setUnitPrice(((Number) itemData.get("unit_price")).doubleValue());
-        }
+        // Precio unitario - usando método auxiliar
+        Double unitPrice = parseDoubleFromObject(itemData.get("unit_price"));
+        item.setUnitPrice(unitPrice != null ? unitPrice : 0.0);
 
-        // Precio total
-        if (itemData.get("total_price") instanceof Number) {
-            item.setTotalPrice(((Number) itemData.get("total_price")).doubleValue());
+        // Precio total - usando método auxiliar
+        Double totalPrice = parseDoubleFromObject(itemData.get("total_price"));
+        if (totalPrice != null) {
+            item.setTotalPrice(totalPrice);
         } else {
             // Calcular si no viene del backend
-            double total = item.getQuantity() * item.getUnitPrice();
-            item.setTotalPrice(total);
+            item.setTotalPrice(item.getQuantity() * item.getUnitPrice());
         }
 
         // Proveedor
-        item.setSupplierName((String) itemData.get("supplier_name"));
-        if (itemData.get("supplier") instanceof Number) {
-            item.setSupplierId(((Number) itemData.get("supplier")).longValue());
-        }
+        item.setSupplierName(parseStringFromObject(itemData.get("supplier_name")));
+        item.setSupplierId(parseLongFromObject(itemData.get("supplier")));
 
         // Notas
-        item.setNotes((String) itemData.get("notes"));
+        item.setNotes(parseStringFromObject(itemData.get("notes")));
+
+        // Log para debug
+        Log.d(TAG, "Item creado: " + item.getDescription() +
+                " - Cantidad: " + item.getQuantity() +
+                " - Precio unitario: " + item.getUnitPrice() +
+                " - Total: " + item.getTotalPrice());
 
         return item;
+    }
+
+    // ==========================================
+    // MÉTODOS DE CONVERSIÓN SEGUROS
+    // ==========================================
+
+    /**
+     * Convierte un objeto a Long de manera segura
+     * Maneja tanto Number como String
+     */
+    private Long parseLongFromObject(Object obj) {
+        if (obj == null) return null;
+
+        if (obj instanceof Number) {
+            return ((Number) obj).longValue();
+        }
+
+        if (obj instanceof String) {
+            try {
+                return Long.parseLong((String) obj);
+            } catch (NumberFormatException e) {
+                Log.w(TAG, "Error al convertir string a long: " + obj);
+                return null;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Convierte un objeto a Double de manera segura
+     * Maneja tanto Number como String
+     */
+    private Double parseDoubleFromObject(Object obj) {
+        if (obj == null) return null;
+
+        if (obj instanceof Number) {
+            return ((Number) obj).doubleValue();
+        }
+
+        if (obj instanceof String) {
+            try {
+                return Double.parseDouble((String) obj);
+            } catch (NumberFormatException e) {
+                Log.w(TAG, "Error al convertir string a double: " + obj);
+                return null;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Convierte un objeto a String de manera segura
+     */
+    private String parseStringFromObject(Object obj) {
+        if (obj == null) return null;
+        return obj.toString();
     }
 
     /**
