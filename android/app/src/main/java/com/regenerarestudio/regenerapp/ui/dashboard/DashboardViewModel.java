@@ -13,6 +13,7 @@ import com.regenerarestudio.regenerapp.data.api.ApiService;
 import com.regenerarestudio.regenerapp.data.models.Project;
 import com.regenerarestudio.regenerapp.data.network.NetworkStateManager;
 import com.regenerarestudio.regenerapp.data.responses.DashboardResponse;
+import com.regenerarestudio.regenerapp.utils.FinancialSummaryHelper;
 
 import java.util.Map;
 
@@ -21,8 +22,9 @@ import retrofit2.Callback;
 import retrofit2.Response;
 
 /**
- * ViewModel actualizado para Dashboard - Conectado con APIs REST - CORREGIDO
+ * ViewModel actualizado para Dashboard - INTEGRADO CON FinancialSummaryHelper
  * Maneja datos del proyecto seleccionado, resumen financiero y estadísticas
+ * El pull-to-refresh ahora actualiza el resumen financiero antes de recargar datos
  */
 public class DashboardViewModel extends AndroidViewModel {
 
@@ -54,7 +56,7 @@ public class DashboardViewModel extends AndroidViewModel {
         isLoadingLiveData.setValue(false);
         errorLiveData.setValue(null);
 
-        Log.d(TAG, "DashboardViewModel inicializado");
+        Log.d(TAG, "DashboardViewModel inicializado con FinancialSummaryHelper");
     }
 
     /**
@@ -137,10 +139,70 @@ public class DashboardViewModel extends AndroidViewModel {
     }
 
     /**
-     * Refrescar datos del dashboard (forzar recarga)
+     * Refrescar datos del dashboard (forzar recarga) - INTEGRADO CON FinancialSummaryHelper
+     * Ahora primero actualiza el resumen financiero y luego recarga los datos
      */
     public void refreshDashboard() {
+        if (currentProjectId == null) {
+            Log.w(TAG, "No hay proyecto seleccionado para refrescar");
+            return;
+        }
+
+        Log.d(TAG, "🔄 Iniciando refresh del dashboard con actualización del resumen financiero...");
+
+        // Mostrar indicador de carga
+        isLoadingLiveData.setValue(true);
+        errorLiveData.setValue(null);
+
+        // PASO 1: Actualizar resumen financiero usando el helper
+        FinancialSummaryHelper.refreshSelectedProjectSummary(apiService, new FinancialSummaryHelper.RefreshCallback() {
+            @Override
+            public void onSuccess() {
+                Log.d(TAG, "✅ Resumen financiero actualizado correctamente");
+
+                // PASO 2: Recargar datos del dashboard con el resumen actualizado
+                reloadDashboardDataAfterFinancialRefresh();
+            }
+
+            @Override
+            public void onError(String error) {
+                Log.e(TAG, "❌ Error al actualizar resumen financiero: " + error);
+
+                // Aunque falle el refresh del resumen, intentamos recargar el dashboard
+                Log.d(TAG, "Continuando con recarga del dashboard a pesar del error del resumen");
+                reloadDashboardDataAfterFinancialRefresh();
+            }
+        });
+    }
+
+    /**
+     * Recargar datos del dashboard después del refresh del resumen financiero
+     * Método privado llamado desde refreshDashboard()
+     */
+    private void reloadDashboardDataAfterFinancialRefresh() {
+        if (currentProjectId == null) {
+            isLoadingLiveData.setValue(false);
+            return;
+        }
+
+        Log.d(TAG, "📊 Recargando datos del dashboard para proyecto: " + currentProjectId);
+
+        // Forzar recarga limpiando el ID actual temporalmente
+        Long projectId = currentProjectId;
+        currentProjectId = null;
+
+        // Recargar datos del dashboard (esto llamará a loadDashboardData)
+        loadDashboardData(projectId);
+    }
+
+    /**
+     * Método público adicional para refresh simple sin helper (si es necesario)
+     * Mantiene compatibilidad con llamadas que no requieren actualización del resumen
+     */
+    public void refreshDashboardDataOnly() {
         if (currentProjectId != null) {
+            Log.d(TAG, "Refrescando solo datos del dashboard (sin actualizar resumen financiero)");
+
             // Forzar recarga limpiando el ID actual
             Long projectId = currentProjectId;
             currentProjectId = null;

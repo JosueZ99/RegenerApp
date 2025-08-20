@@ -64,7 +64,6 @@ public class MainActivity extends AppCompatActivity {
         setSupportActionBar(binding.appBarMain.toolbar);
         updateToolbarTitle();
 
-        setupFAB();
         setupDrawerLayout();
         setupBottomNavigation();
         setupNavigationDrawer();
@@ -114,31 +113,6 @@ public class MainActivity extends AppCompatActivity {
             getSupportActionBar().setTitle("RegenerApp");
             getSupportActionBar().setSubtitle(selectedProjectName);
         }
-    }
-
-    private void setupFAB() {
-        binding.appBarMain.fab.setOnClickListener(view -> {
-            // Acción según el fragmento actual
-            Fragment currentFragment = getSupportFragmentManager().findFragmentById(R.id.nav_host_fragment_content_main);
-
-            if (currentFragment instanceof DashboardFragment) {
-                Snackbar.make(view, "Crear nueva tarea - Próximamente", Snackbar.LENGTH_LONG)
-                        .setAction("Action", null)
-                        .setAnchorView(R.id.fab).show();
-            } else if (currentFragment instanceof CalculadoraFragment) {
-                Snackbar.make(view, "Nueva calculadora - Próximamente", Snackbar.LENGTH_LONG)
-                        .setAction("Action", null)
-                        .setAnchorView(R.id.fab).show();
-            } else if (currentFragment instanceof PresupuestosFragment) {
-                Snackbar.make(view, "Nuevo item de presupuesto", Snackbar.LENGTH_LONG)
-                        .setAction("Crear", null)
-                        .setAnchorView(R.id.fab).show();
-            } else {
-                Snackbar.make(view, "Acción rápida disponible", Snackbar.LENGTH_LONG)
-                        .setAction("Action", null)
-                        .setAnchorView(R.id.fab).show();
-            }
-        });
     }
 
     private void setupDrawerLayout() {

@@ -11,7 +11,6 @@ import androidx.lifecycle.MutableLiveData;
 import com.regenerarestudio.regenerapp.data.api.ApiClient;
 import com.regenerarestudio.regenerapp.data.api.ApiService;
 import com.regenerarestudio.regenerapp.data.responses.PaginatedResponse;
-import com.regenerarestudio.regenerapp.utils.FinancialSummaryHelper;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -22,8 +21,8 @@ import retrofit2.Callback;
 import retrofit2.Response;
 
 /**
- * ViewModel actualizado para manejar presupuestos usando APIs REST - URLs CORREGIDAS
- * Usa las URLs reales del backend Django
+ * ViewModel actualizado para manejar presupuestos usando APIs REST - SIN RESUMEN FINANCIERO
+ * El resumen financiero ahora solo está en el Dashboard - CORREGIDO
  */
 public class PresupuestosViewModel extends AndroidViewModel {
 
@@ -38,13 +37,9 @@ public class PresupuestosViewModel extends AndroidViewModel {
     // LiveData para gastos reales
     private final MutableLiveData<List<Map<String, Object>>> expensesRealLiveData = new MutableLiveData<>();
 
-    // LiveData para resumen financiero
-    private final MutableLiveData<Map<String, Object>> financialSummaryLiveData = new MutableLiveData<>();
-
-    // Estados de carga
+    // Estados de carga (REMOVIDO: isLoadingSummaryLiveData)
     private final MutableLiveData<Boolean> isLoadingBudgetLiveData = new MutableLiveData<>();
     private final MutableLiveData<Boolean> isLoadingExpensesLiveData = new MutableLiveData<>();
-    private final MutableLiveData<Boolean> isLoadingSummaryLiveData = new MutableLiveData<>();
 
     // Estados de error
     private final MutableLiveData<String> errorLiveData = new MutableLiveData<>();
@@ -61,14 +56,13 @@ public class PresupuestosViewModel extends AndroidViewModel {
         // Inicializar estados
         isLoadingBudgetLiveData.setValue(false);
         isLoadingExpensesLiveData.setValue(false);
-        isLoadingSummaryLiveData.setValue(false);
         errorLiveData.setValue(null);
 
-        Log.d(TAG, "PresupuestosViewModel inicializado con URLs corregidas del backend");
+        Log.d(TAG, "PresupuestosViewModel inicializado - SIN resumen financiero");
     }
 
     // ==========================================
-    // GETTERS PARA LIVEDATA
+    // GETTERS PARA LIVEDATA (REMOVIDO: getFinancialSummary, getIsLoadingSummary)
     // ==========================================
 
     public LiveData<List<Map<String, Object>>> getBudgetInitial() {
@@ -79,10 +73,6 @@ public class PresupuestosViewModel extends AndroidViewModel {
         return expensesRealLiveData;
     }
 
-    public LiveData<Map<String, Object>> getFinancialSummary() {
-        return financialSummaryLiveData;
-    }
-
     public LiveData<Boolean> getIsLoadingBudget() {
         return isLoadingBudgetLiveData;
     }
@@ -91,20 +81,16 @@ public class PresupuestosViewModel extends AndroidViewModel {
         return isLoadingExpensesLiveData;
     }
 
-    public LiveData<Boolean> getIsLoadingSummary() {
-        return isLoadingSummaryLiveData;
-    }
-
     public LiveData<String> getError() {
         return errorLiveData;
     }
 
     // ==========================================
-    // MÉTODOS PRINCIPALES
+    // MÉTODOS PRINCIPALES (SIMPLIFICADOS)
     // ==========================================
 
     /**
-     * Cargar todos los datos de presupuestos para un proyecto
+     * Cargar todos los datos de presupuestos para un proyecto - SOLO TABLAS
      */
     public void loadAllBudgetData(Long projectId) {
         if (projectId == null || projectId <= 0) {
@@ -115,17 +101,16 @@ public class PresupuestosViewModel extends AndroidViewModel {
 
         currentProjectId = projectId;
 
-        Log.d(TAG, "Cargando todos los datos de presupuestos para proyecto: " + projectId);
+        Log.d(TAG, "Cargando datos de presupuestos para proyecto: " + projectId);
 
-        // Cargar datos en paralelo usando URLs corregidas
+        // Solo cargar presupuesto inicial y gastos reales
         loadBudgetInitial(projectId);
         loadExpensesReal(projectId);
-        loadFinancialSummary(projectId);
     }
 
     /**
-     * Cargar presupuesto inicial del proyecto - CORREGIDO PARA MANEJAR PAGINATEDRESPONSE
-     * URL CORREGIDA: /api/budgets/budget-items/?project={projectId}
+     * Cargar presupuesto inicial del proyecto
+     * URL: /api/budgets/budget-items/?project={projectId}
      */
     public void loadBudgetInitial(Long projectId) {
         if (projectId == null) {
@@ -138,7 +123,6 @@ public class PresupuestosViewModel extends AndroidViewModel {
         isLoadingBudgetLiveData.setValue(true);
         errorLiveData.setValue(null);
 
-        // URL CORREGIDA - Ahora maneja PaginatedResponse
         Call<PaginatedResponse<Map<String, Object>>> call = apiService.getInitialBudget(projectId);
 
         call.enqueue(new Callback<PaginatedResponse<Map<String, Object>>>() {
@@ -149,31 +133,18 @@ public class PresupuestosViewModel extends AndroidViewModel {
 
                 if (response.isSuccessful() && response.body() != null) {
                     PaginatedResponse<Map<String, Object>> paginatedResponse = response.body();
-
-                    // Extraer los resultados de la respuesta paginada
                     List<Map<String, Object>> budgetItems = paginatedResponse.getResults();
 
                     if (budgetItems != null) {
-                        Log.d(TAG, "Presupuesto inicial cargado exitosamente. Total Items: " + budgetItems.size());
+                        Log.d(TAG, "Presupuesto inicial cargado exitosamente. Items: " + budgetItems.size());
                         budgetInitialLiveData.setValue(budgetItems);
                     } else {
-                        Log.w(TAG, "Respuesta exitosa pero results es null");
+                        Log.w(TAG, "Lista de presupuesto inicial es null");
                         budgetInitialLiveData.setValue(new ArrayList<>());
                     }
                 } else {
                     String error = "Error al cargar presupuesto inicial: " + response.code();
                     Log.e(TAG, error);
-
-                    try {
-                        if (response.errorBody() != null) {
-                            String errorBody = response.errorBody().string();
-                            Log.e(TAG, "Error del servidor: " + errorBody);
-                            error += " - " + errorBody;
-                        }
-                    } catch (Exception e) {
-                        Log.e(TAG, "Error al leer mensaje de error", e);
-                    }
-
                     errorLiveData.setValue(error);
                 }
             }
@@ -181,7 +152,6 @@ public class PresupuestosViewModel extends AndroidViewModel {
             @Override
             public void onFailure(@NonNull Call<PaginatedResponse<Map<String, Object>>> call, @NonNull Throwable t) {
                 isLoadingBudgetLiveData.setValue(false);
-
                 String error = "Error de conexión al cargar presupuesto inicial: " + t.getMessage();
                 Log.e(TAG, error, t);
                 errorLiveData.setValue(error);
@@ -190,8 +160,8 @@ public class PresupuestosViewModel extends AndroidViewModel {
     }
 
     /**
-     * Cargar gastos reales del proyecto - CORREGIDO PARA MANEJAR PAGINATEDRESPONSE
-     * URL CORREGIDA: /api/budgets/real-expenses/?project={projectId}
+     * Cargar gastos reales del proyecto - CORREGIDO
+     * URL: /api/budgets/real-expenses/?project={projectId}
      */
     public void loadExpensesReal(Long projectId) {
         if (projectId == null) {
@@ -204,7 +174,6 @@ public class PresupuestosViewModel extends AndroidViewModel {
         isLoadingExpensesLiveData.setValue(true);
         errorLiveData.setValue(null);
 
-        // URL CORREGIDA - Ahora maneja PaginatedResponse
         Call<PaginatedResponse<Map<String, Object>>> call = apiService.getExpenses(projectId);
 
         call.enqueue(new Callback<PaginatedResponse<Map<String, Object>>>() {
@@ -215,31 +184,18 @@ public class PresupuestosViewModel extends AndroidViewModel {
 
                 if (response.isSuccessful() && response.body() != null) {
                     PaginatedResponse<Map<String, Object>> paginatedResponse = response.body();
+                    List<Map<String, Object>> expenses = paginatedResponse.getResults();
 
-                    // Extraer los resultados de la respuesta paginada
-                    List<Map<String, Object>> expenseItems = paginatedResponse.getResults();
-
-                    if (expenseItems != null) {
-                        Log.d(TAG, "Gastos reales cargados exitosamente. Total Items: " + expenseItems.size());
-                        expensesRealLiveData.setValue(expenseItems);
+                    if (expenses != null) {
+                        Log.d(TAG, "Gastos reales cargados exitosamente. Items: " + expenses.size());
+                        expensesRealLiveData.setValue(expenses);
                     } else {
-                        Log.w(TAG, "Respuesta exitosa pero results es null");
+                        Log.w(TAG, "Lista de gastos reales es null");
                         expensesRealLiveData.setValue(new ArrayList<>());
                     }
                 } else {
                     String error = "Error al cargar gastos reales: " + response.code();
                     Log.e(TAG, error);
-
-                    try {
-                        if (response.errorBody() != null) {
-                            String errorBody = response.errorBody().string();
-                            Log.e(TAG, "Error del servidor: " + errorBody);
-                            error += " - " + errorBody;
-                        }
-                    } catch (Exception e) {
-                        Log.e(TAG, "Error al leer mensaje de error", e);
-                    }
-
                     errorLiveData.setValue(error);
                 }
             }
@@ -247,7 +203,6 @@ public class PresupuestosViewModel extends AndroidViewModel {
             @Override
             public void onFailure(@NonNull Call<PaginatedResponse<Map<String, Object>>> call, @NonNull Throwable t) {
                 isLoadingExpensesLiveData.setValue(false);
-
                 String error = "Error de conexión al cargar gastos reales: " + t.getMessage();
                 Log.e(TAG, error, t);
                 errorLiveData.setValue(error);
@@ -255,95 +210,16 @@ public class PresupuestosViewModel extends AndroidViewModel {
         });
     }
 
-    /**
-     * Cargar resumen financiero del proyecto
-     * URL OPTIMIZADA: Usar dashboard que ya incluye financial_summary
-     * /api/projects/{projectId}/dashboard/
-     */
-    public void loadFinancialSummary(Long projectId) {
-        if (projectId == null) {
-            errorLiveData.setValue("Error: ID de proyecto es null");
-            return;
-        }
-
-        Log.d(TAG, "Cargando resumen financiero para proyecto: " + projectId);
-
-        isLoadingSummaryLiveData.setValue(true);
-        errorLiveData.setValue(null);
-
-        // URL OPTIMIZADA: Usar dashboard que ya incluye toda la información financiera
-        Call<Map<String, Object>> call = apiService.getDashboard(projectId);
-
-        call.enqueue(new Callback<Map<String, Object>>() {
-            @Override
-            public void onResponse(@NonNull Call<Map<String, Object>> call,
-                                   @NonNull Response<Map<String, Object>> response) {
-                isLoadingSummaryLiveData.setValue(false);
-
-                if (response.isSuccessful() && response.body() != null) {
-                    Log.d(TAG, "Dashboard cargado exitosamente");
-
-                    // Extraer financial_summary del dashboard response
-                    Map<String, Object> dashboardData = response.body();
-                    Object financialSummaryObj = dashboardData.get("financial_summary");
-
-                    if (financialSummaryObj instanceof Map) {
-                        @SuppressWarnings("unchecked")
-                        Map<String, Object> financialSummary = (Map<String, Object>) financialSummaryObj;
-                        financialSummaryLiveData.setValue(financialSummary);
-                        Log.d(TAG, "Resumen financiero extraído del dashboard exitosamente");
-                    } else {
-                        Log.w(TAG, "financial_summary no encontrado en dashboard response");
-                        errorLiveData.setValue("Error: resumen financiero no disponible");
-                    }
-                } else {
-                    String error = "Error al cargar resumen financiero: " + response.code();
-                    Log.e(TAG, error);
-
-                    try {
-                        if (response.errorBody() != null) {
-                            String errorBody = response.errorBody().string();
-                            Log.e(TAG, "Error del servidor: " + errorBody);
-                            error += " - " + errorBody;
-                        }
-                    } catch (Exception e) {
-                        Log.e(TAG, "Error al leer mensaje de error", e);
-                    }
-
-                    errorLiveData.setValue(error);
-                }
-            }
-
-            @Override
-            public void onFailure(@NonNull Call<Map<String, Object>> call, @NonNull Throwable t) {
-                isLoadingSummaryLiveData.setValue(false);
-
-                String error = "Error de conexión al cargar resumen financiero: " + t.getMessage();
-                Log.e(TAG, error, t);
-                errorLiveData.setValue(error);
-            }
-        });
-    }
+    // ==========================================
+    // MÉTODOS CRUD (SIN REFRESH DE RESUMEN FINANCIERO) - CORREGIDOS
+    // ==========================================
 
     /**
-     * Refrescar todos los datos
-     */
-    public void refreshAllData() {
-        if (currentProjectId != null) {
-            Log.d(TAG, "Refrescando todos los datos para proyecto: " + currentProjectId);
-            loadAllBudgetData(currentProjectId);
-        } else {
-            Log.w(TAG, "No hay proyecto seleccionado para refrescar");
-            errorLiveData.setValue("No hay proyecto seleccionado");
-        }
-    }
-
-    /**
-     * Agregar item al presupuesto inicial
-     * URL CORREGIDA: /api/budgets/budget-items/
+     * Agregar item al presupuesto inicial - SIN REFRESH AUTOMÁTICO DE RESUMEN - CORREGIDO
+     * POST /api/budgets/budget-items/
      */
     public void addItemToBudget(Map<String, Object> budgetItem) {
-        Log.d(TAG, "Agregando item al presupuesto inicial");
+        Log.d(TAG, "Agregando item al presupuesto");
 
         isLoadingBudgetLiveData.setValue(true);
         errorLiveData.setValue(null);
@@ -363,10 +239,6 @@ public class PresupuestosViewModel extends AndroidViewModel {
                     if (currentProjectId != null) {
                         loadBudgetInitial(currentProjectId);
                     }
-
-                    // 🔥 NUEVO: Refrescar resumen financiero automáticamente
-                    refreshFinancialSummaryAfterChange();
-
                 } else {
                     String error = "Error al agregar item al presupuesto: " + response.code();
                     Log.e(TAG, error);
@@ -385,53 +257,7 @@ public class PresupuestosViewModel extends AndroidViewModel {
     }
 
     /**
-     * Agregar gasto real
-     * URL CORREGIDA: /api/budgets/real-expenses/
-     */
-    public void addExpense(Map<String, Object> expense) {
-        Log.d(TAG, "Agregando gasto real");
-
-        isLoadingExpensesLiveData.setValue(true);
-        errorLiveData.setValue(null);
-
-        Call<Map<String, Object>> call = apiService.addExpense(expense);
-
-        call.enqueue(new Callback<Map<String, Object>>() {
-            @Override
-            public void onResponse(@NonNull Call<Map<String, Object>> call,
-                                   @NonNull Response<Map<String, Object>> response) {
-                isLoadingExpensesLiveData.setValue(false);
-
-                if (response.isSuccessful()) {
-                    Log.d(TAG, "✅ Gasto agregado exitosamente");
-
-                    // Recargar gastos reales
-                    if (currentProjectId != null) {
-                        loadExpensesReal(currentProjectId);
-                    }
-
-                    // 🔥 NUEVO: Refrescar resumen financiero automáticamente
-                    refreshFinancialSummaryAfterChange();
-
-                } else {
-                    String error = "Error al agregar gasto: " + response.code();
-                    Log.e(TAG, error);
-                    errorLiveData.setValue(error);
-                }
-            }
-
-            @Override
-            public void onFailure(@NonNull Call<Map<String, Object>> call, @NonNull Throwable t) {
-                isLoadingExpensesLiveData.setValue(false);
-                String error = "Error de conexión al agregar gasto: " + t.getMessage();
-                Log.e(TAG, error, t);
-                errorLiveData.setValue(error);
-            }
-        });
-    }
-
-    /**
-     * Actualizar item del presupuesto inicial - CON REFRESH AUTOMÁTICO
+     * Actualizar item del presupuesto inicial - SIN REFRESH AUTOMÁTICO DE RESUMEN
      * PUT /api/budgets/budget-items/{id}/
      */
     public void updateBudgetItem(Long budgetItemId, Map<String, Object> budgetItem) {
@@ -455,10 +281,6 @@ public class PresupuestosViewModel extends AndroidViewModel {
                     if (currentProjectId != null) {
                         loadBudgetInitial(currentProjectId);
                     }
-
-                    // 🔥 NUEVO: Refrescar resumen financiero
-                    refreshFinancialSummaryAfterChange();
-
                 } else {
                     String error = "Error al actualizar item del presupuesto: " + response.code();
                     Log.e(TAG, error);
@@ -477,7 +299,7 @@ public class PresupuestosViewModel extends AndroidViewModel {
     }
 
     /**
-     * Eliminar item del presupuesto inicial - CON REFRESH AUTOMÁTICO
+     * Eliminar item del presupuesto inicial - SIN REFRESH AUTOMÁTICO DE RESUMEN
      * DELETE /api/budgets/budget-items/{id}/
      */
     public void deleteBudgetItem(Long budgetItemId) {
@@ -500,10 +322,6 @@ public class PresupuestosViewModel extends AndroidViewModel {
                     if (currentProjectId != null) {
                         loadBudgetInitial(currentProjectId);
                     }
-
-                    // 🔥 NUEVO: Refrescar resumen financiero
-                    refreshFinancialSummaryAfterChange();
-
                 } else {
                     String error = "Error al eliminar item del presupuesto: " + response.code();
                     Log.e(TAG, error);
@@ -522,10 +340,52 @@ public class PresupuestosViewModel extends AndroidViewModel {
     }
 
     /**
-     * Actualizar gasto real - CON REFRESH AUTOMÁTICO
+     * Agregar gasto real - SIN REFRESH AUTOMÁTICO DE RESUMEN - CORREGIDO
+     * POST /api/budgets/real-expenses/
+     */
+    public void addExpenseReal(Map<String, Object> expense) {
+        Log.d(TAG, "Agregando gasto real");
+
+        isLoadingExpensesLiveData.setValue(true);
+        errorLiveData.setValue(null);
+
+        Call<Map<String, Object>> call = apiService.addExpense(expense);
+
+        call.enqueue(new Callback<Map<String, Object>>() {
+            @Override
+            public void onResponse(@NonNull Call<Map<String, Object>> call,
+                                   @NonNull Response<Map<String, Object>> response) {
+                isLoadingExpensesLiveData.setValue(false);
+
+                if (response.isSuccessful()) {
+                    Log.d(TAG, "✅ Gasto agregado exitosamente");
+
+                    // Recargar gastos reales
+                    if (currentProjectId != null) {
+                        loadExpensesReal(currentProjectId);
+                    }
+                } else {
+                    String error = "Error al agregar gasto: " + response.code();
+                    Log.e(TAG, error);
+                    errorLiveData.setValue(error);
+                }
+            }
+
+            @Override
+            public void onFailure(@NonNull Call<Map<String, Object>> call, @NonNull Throwable t) {
+                isLoadingExpensesLiveData.setValue(false);
+                String error = "Error de conexión al agregar gasto: " + t.getMessage();
+                Log.e(TAG, error, t);
+                errorLiveData.setValue(error);
+            }
+        });
+    }
+
+    /**
+     * Actualizar gasto real - SIN REFRESH AUTOMÁTICO DE RESUMEN - CORREGIDO
      * PUT /api/budgets/real-expenses/{id}/
      */
-    public void updateExpense(Long expenseId, Map<String, Object> expense) {
+    public void updateExpenseReal(Long expenseId, Map<String, Object> expense) {
         Log.d(TAG, "Actualizando gasto real ID: " + expenseId);
 
         isLoadingExpensesLiveData.setValue(true);
@@ -540,16 +400,12 @@ public class PresupuestosViewModel extends AndroidViewModel {
                 isLoadingExpensesLiveData.setValue(false);
 
                 if (response.isSuccessful()) {
-                    Log.d(TAG, "✅ Gasto real actualizado exitosamente");
+                    Log.d(TAG, "✅ Gasto actualizado exitosamente");
 
                     // Recargar gastos reales
                     if (currentProjectId != null) {
                         loadExpensesReal(currentProjectId);
                     }
-
-                    // 🔥 NUEVO: Refrescar resumen financiero
-                    refreshFinancialSummaryAfterChange();
-
                 } else {
                     String error = "Error al actualizar gasto real: " + response.code();
                     Log.e(TAG, error);
@@ -568,10 +424,10 @@ public class PresupuestosViewModel extends AndroidViewModel {
     }
 
     /**
-     * Eliminar gasto real - CON REFRESH AUTOMÁTICO
+     * Eliminar gasto real - SIN REFRESH AUTOMÁTICO DE RESUMEN - CORREGIDO
      * DELETE /api/budgets/real-expenses/{id}/
      */
-    public void deleteExpense(Long expenseId) {
+    public void deleteExpenseReal(Long expenseId) {
         Log.d(TAG, "Eliminando gasto real ID: " + expenseId);
 
         isLoadingExpensesLiveData.setValue(true);
@@ -585,16 +441,12 @@ public class PresupuestosViewModel extends AndroidViewModel {
                 isLoadingExpensesLiveData.setValue(false);
 
                 if (response.isSuccessful()) {
-                    Log.d(TAG, "✅ Gasto real eliminado exitosamente");
+                    Log.d(TAG, "✅ Gasto eliminado exitosamente");
 
                     // Recargar gastos reales
                     if (currentProjectId != null) {
                         loadExpensesReal(currentProjectId);
                     }
-
-                    // 🔥 NUEVO: Refrescar resumen financiero
-                    refreshFinancialSummaryAfterChange();
-
                 } else {
                     String error = "Error al eliminar gasto real: " + response.code();
                     Log.e(TAG, error);
@@ -613,33 +465,16 @@ public class PresupuestosViewModel extends AndroidViewModel {
     }
 
     /**
-     * 🔥 NUEVO MÉTODO: Refrescar resumen financiero después de cambios
-     * Usa el helper para llamar automáticamente a la API de refresh
+     * Refrescar todos los datos - SIMPLIFICADO
      */
-    private void refreshFinancialSummaryAfterChange() {
-        Log.d(TAG, "🔄 Refrescando resumen financiero después del cambio...");
-
-        FinancialSummaryHelper.refreshSelectedProjectSummary(apiService, new FinancialSummaryHelper.RefreshCallback() {
-            @Override
-            public void onSuccess() {
-                Log.d(TAG, "✅ Resumen financiero actualizado correctamente");
-
-                // Recargar resumen local para mostrar datos actualizados
-                if (currentProjectId != null) {
-                    loadFinancialSummary(currentProjectId);
-                }
-            }
-
-            @Override
-            public void onError(String error) {
-                Log.e(TAG, "❌ Error al actualizar resumen financiero: " + error);
-                // No mostramos el error al usuario porque es un proceso en segundo plano
-                // El resumen se actualizará la próxima vez que se cargue
-            }
-        });
+    public void refreshAllData() {
+        if (currentProjectId != null) {
+            Log.d(TAG, "Refrescando todos los datos para proyecto: " + currentProjectId);
+            loadAllBudgetData(currentProjectId);
+        } else {
+            Log.w(TAG, "No hay proyecto seleccionado para refrescar");
+        }
     }
-
-
 
     /**
      * Limpiar datos cuando se cambie de proyecto
@@ -649,7 +484,6 @@ public class PresupuestosViewModel extends AndroidViewModel {
 
         budgetInitialLiveData.setValue(null);
         expensesRealLiveData.setValue(null);
-        financialSummaryLiveData.setValue(null);
         errorLiveData.setValue(null);
         currentProjectId = null;
     }

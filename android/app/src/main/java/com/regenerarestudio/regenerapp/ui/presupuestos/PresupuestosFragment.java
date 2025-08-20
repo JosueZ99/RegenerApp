@@ -28,7 +28,7 @@ import java.util.Map;
 
 /**
  * Fragment del Sistema de Presupuestos con tablas interactivas
- * Actualizado para usar APIs reales del backend - TabLayout ID CORREGIDO
+ * SIMPLIFICADO - SIN resumen financiero (solo en Dashboard)
  */
 public class PresupuestosFragment extends Fragment {
 
@@ -41,16 +41,11 @@ public class PresupuestosFragment extends Fragment {
     private long projectId;
     private String projectName;
 
-    // Datos financieros (ahora vienen del backend)
-    private double totalBudget = 0.0;
-    private double totalExpenses = 0.0;
-    private double totalBalance = 0.0;
-
     // Adapter para ViewPager
     private BudgetPagerAdapter pagerAdapter;
 
     // Formatters
-    private final NumberFormat currencyFormat = NumberFormat.getCurrencyInstance(new Locale("es", "EC"));
+    private final NumberFormat currencyFormatter = NumberFormat.getCurrencyInstance(new Locale("es", "EC"));
 
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -62,88 +57,118 @@ public class PresupuestosFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        Log.d(TAG, "onViewCreated - Inicializando PresupuestosFragment");
-
         // Inicializar ViewModel
         presupuestosViewModel = new ViewModelProvider(this).get(PresupuestosViewModel.class);
 
-        // Configurar UI
-        getProjectInfo();
-        setupViewPager();
-        setupFloatingActionButtons();
+        // Obtener datos del proyecto desde MainActivity
+        getProjectDataFromActivity();
 
-        // Observar datos del ViewModel
+        // Configurar componentes de la UI
+        setupViewPager();
+        setupFabButtons();
         observeViewModel();
 
-        // Cargar datos si hay proyecto seleccionado
-        if (projectId > 0) {
-            loadAllBudgetData();
-        } else {
-            Log.w(TAG, "No hay proyecto seleccionado");
-            showError("No hay proyecto seleccionado");
-        }
+        // Cargar datos iniciales
+        loadAllBudgetData();
+
+        Log.d(TAG, "PresupuestosFragment configurado correctamente - SIN resumen financiero");
     }
 
-    private void getProjectInfo() {
-        if (getActivity() instanceof MainActivity) {
-            MainActivity mainActivity = (MainActivity) getActivity();
-            projectId = mainActivity.getSelectedProjectId();
-            projectName = mainActivity.getSelectedProjectName();
+    // ==========================================
+    // CONFIGURACIÓN DE LA UI
+    // ==========================================
 
-            Log.d(TAG, "Proyecto seleccionado - ID: " + projectId + ", Nombre: " + projectName);
+    /**
+     * Obtener datos del proyecto desde MainActivity
+     */
+    private void getProjectDataFromActivity() {
+        if (getActivity() instanceof MainActivity) {
+            MainActivity activity = (MainActivity) getActivity();
+
+            projectId = activity.getSelectedProjectId();
+            projectName = activity.getSelectedProjectName();
+
+            Log.d(TAG, "Datos del proyecto obtenidos - ID: " + projectId + ", Nombre: " + projectName);
+
+            if (projectId <= 0) {
+                Log.e(TAG, "Error: No hay proyecto seleccionado");
+                showError("Error: No hay proyecto seleccionado");
+                return;
+            }
         } else {
-            Log.e(TAG, "Error: MainActivity no encontrada");
+            Log.e(TAG, "Error: Activity no es instanceof MainActivity");
+            showError("Error: No se pudo obtener datos del proyecto");
         }
     }
 
     /**
-     * CORREGIDO: Usar ID correcto del TabLayout según fragment_presupuestos.xml
+     * Configurar ViewPager2 y TabLayout para las dos tablas
      */
     private void setupViewPager() {
+        Log.d(TAG, "Configurando ViewPager y TabLayout");
+
+        // Crear adapter
         pagerAdapter = new BudgetPagerAdapter(this);
         binding.viewPagerBudget.setAdapter(pagerAdapter);
 
-        // Configurar TabLayout con ViewPager - ID CORREGIDO: tab_layout (no tabLayoutBudget)
-        new TabLayoutMediator(binding.tabLayout, binding.viewPagerBudget, (tab, position) -> {
-            switch (position) {
-                case 0:
-                    tab.setText(getString(R.string.presupuesto_inicial));
-                    break;
-                case 1:
-                    tab.setText(getString(R.string.gastos_reales));
-                    break;
-            }
-        }).attach();
+        // Conectar TabLayout con ViewPager2
+        new TabLayoutMediator(binding.tabLayoutBudget, binding.viewPagerBudget,
+                (tab, position) -> {
+                    switch (position) {
+                        case 0:
+                            tab.setText(getString(R.string.presupuesto_inicial));
+                            break;
+                        case 1:
+                            tab.setText(getString(R.string.gastos_reales));
+                            break;
+                    }
+                }).attach();
 
-        Log.d(TAG, "ViewPager y TabLayout configurados");
+        // Listener para cambios de tab
+        binding.tabLayoutBudget.addOnTabSelectedListener(new com.google.android.material.tabs.TabLayout.OnTabSelectedListener() {
+            @Override
+            public void onTabSelected(com.google.android.material.tabs.TabLayout.Tab tab) {
+                updateFabVisibility(tab.getPosition());
+            }
+
+            @Override
+            public void onTabUnselected(com.google.android.material.tabs.TabLayout.Tab tab) {
+                // No necesario
+            }
+
+            @Override
+            public void onTabReselected(com.google.android.material.tabs.TabLayout.Tab tab) {
+                // No necesario
+            }
+        });
+
+        // Configurar visibilidad inicial de FABs
+        updateFabVisibility(0);
     }
 
-    private void setupFloatingActionButtons() {
+    /**
+     * Configurar Floating Action Buttons
+     */
+    private void setupFabButtons() {
+        Log.d(TAG, "Configurando FAB buttons");
+
         // FAB Agregar Item
         binding.fabAddItem.setOnClickListener(v -> {
             int currentTab = binding.viewPagerBudget.getCurrentItem();
-            boolean isExpense = (currentTab == 1); // 1 = Gastos Reales
+            boolean isExpense = currentTab == 1; // Tab 1 = Gastos Reales
             showManualEntryForm(isExpense);
         });
 
         // FAB Copiar a Gastos Reales
-        binding.fabCopyToExpenses.setOnClickListener(v -> showCopyToExpensesDialog());
+        binding.fabCopyToExpenses.setOnClickListener(v -> showCopyConfirmationDialog());
 
-        // Mostrar/ocultar FABs según la tab activa
-        binding.viewPagerBudget.registerOnPageChangeCallback(new androidx.viewpager2.widget.ViewPager2.OnPageChangeCallback() {
-            @Override
-            public void onPageSelected(int position) {
-                super.onPageSelected(position);
-                updateFabVisibility(position);
-            }
-        });
-
-        // Estado inicial
-        updateFabVisibility(0);
-
-        Log.d(TAG, "Floating Action Buttons configurados");
+        // Mostrar FABs
+        binding.layoutFabActions.setVisibility(View.VISIBLE);
     }
 
+    /**
+     * Actualizar visibilidad de FABs según el tab seleccionado
+     */
     private void updateFabVisibility(int tabPosition) {
         if (tabPosition == 0) {
             // Presupuesto Inicial: mostrar FAB copiar
@@ -171,18 +196,10 @@ public class PresupuestosFragment extends Fragment {
     }
 
     /**
-     * Observar todos los LiveData del ViewModel
+     * Observar todos los LiveData del ViewModel - SIN RESUMEN FINANCIERO
      */
     private void observeViewModel() {
         Log.d(TAG, "Configurando observadores del ViewModel");
-
-        // Observar resumen financiero
-        presupuestosViewModel.getFinancialSummary().observe(getViewLifecycleOwner(), financialSummary -> {
-            Log.d(TAG, "Observer: Resumen financiero recibido");
-            if (financialSummary != null) {
-                updateFinancialSummary(financialSummary);
-            }
-        });
 
         // Observar presupuesto inicial
         presupuestosViewModel.getBudgetInitial().observe(getViewLifecycleOwner(), budgetItems -> {
@@ -223,11 +240,6 @@ public class PresupuestosFragment extends Fragment {
             updateLoadingState(isLoading);
         });
 
-        presupuestosViewModel.getIsLoadingSummary().observe(getViewLifecycleOwner(), isLoading -> {
-            Log.d(TAG, "Observer: Estado de carga resumen - " + isLoading);
-            updateLoadingState(isLoading);
-        });
-
         // Observar errores
         presupuestosViewModel.getError().observe(getViewLifecycleOwner(), error -> {
             if (error != null && !error.isEmpty()) {
@@ -237,140 +249,35 @@ public class PresupuestosFragment extends Fragment {
         });
     }
 
+    // ==========================================
+    // MÉTODOS DE UI Y MANEJO DE EVENTOS
+    // ==========================================
+
     /**
-     * Actualizar resumen financiero con datos del backend
+     * Actualizar estado de carga visual
      */
-    private void updateFinancialSummary(Map<String, Object> financialSummary) {
-        try {
-            // Extraer valores del Map (vienen del backend Django)
-            Object totalBudgetObj = financialSummary.get("total_budget");
-            Object totalExpensesObj = financialSummary.get("total_expenses");
-            Object balanceObj = financialSummary.get("balance");
-
-            // Convertir a double de forma segura
-            totalBudget = parseDoubleFromObject(totalBudgetObj);
-            totalExpenses = parseDoubleFromObject(totalExpensesObj);
-            totalBalance = parseDoubleFromObject(balanceObj);
-
-            Log.d(TAG, String.format("Resumen financiero actualizado - Budget: %.2f, Expenses: %.2f, Balance: %.2f",
-                    totalBudget, totalExpenses, totalBalance));
-
-            // Actualizar UI
-            updateFinancialDisplays();
-
-        } catch (Exception e) {
-            Log.e(TAG, "Error al procesar resumen financiero", e);
-            showError("Error al procesar datos financieros");
-        }
+    private void updateLoadingState(boolean isLoading) {
+        // Aquí puedes agregar indicadores de carga si es necesario
+        Log.d(TAG, "Estado de carga actualizado: " + isLoading);
     }
 
     /**
-     * Convertir Object a double de forma segura
+     * Mostrar error al usuario
      */
-    private double parseDoubleFromObject(Object obj) {
-        if (obj == null) return 0.0;
-
-        if (obj instanceof Number) {
-            return ((Number) obj).doubleValue();
-        }
-
-        if (obj instanceof String) {
-            try {
-                return Double.parseDouble((String) obj);
-            } catch (NumberFormatException e) {
-                Log.w(TAG, "Error al convertir string a double: " + obj);
-                return 0.0;
-            }
-        }
-
-        return 0.0;
-    }
-
-    /**
-     * Actualizar displays financieros en la UI
-     */
-    private void updateFinancialDisplays() {
-        // Actualizar totales
-        binding.tvTotalBudget.setText(currencyFormat.format(totalBudget));
-        binding.tvTotalExpenses.setText(currencyFormat.format(totalExpenses));
-
-        // Configurar balance con color según si es positivo o negativo
-        if (totalBalance >= 0) {
-            binding.tvBalanceRealTime.setText(currencyFormat.format(totalBalance));
-            binding.tvBalanceRealTime.setTextColor(getResources().getColor(R.color.white, null));
-        } else {
-            binding.tvBalanceRealTime.setText("-" + currencyFormat.format(Math.abs(totalBalance)));
-            binding.tvBalanceRealTime.setTextColor(getResources().getColor(R.color.error, null));
-        }
-
-        // Actualizar barra de progreso
-        updateProgressBar();
-    }
-
-    private void updateProgressBar() {
-        LinearProgressIndicator progressBar = binding.progressBudget;
-
-        if (totalBudget > 0) {
-            int percentage = (int) ((totalExpenses / totalBudget) * 100);
-            progressBar.setProgress(percentage);
-
-            // Configurar color según el porcentaje
-            int colorRes;
-            if (percentage <= 50) {
-                colorRes = R.color.success;
-            } else if (percentage <= 85) {
-                colorRes = R.color.warning;
-            } else {
-                colorRes = R.color.error;
-            }
-
-            progressBar.setIndicatorColor(getResources().getColor(colorRes, null));
-
-            // Actualizar texto de porcentaje
-            String percentageText = percentage + "% del presupuesto utilizado";
-            binding.tvBudgetPercentage.setText(percentageText);
-        } else {
-            progressBar.setProgress(0);
-            binding.tvBudgetPercentage.setText("0% del presupuesto utilizado");
-        }
-    }
-
-    /**
-     * Actualizar estado de carga en la UI
-     */
-    private void updateLoadingState(Boolean isLoading) {
-        if (isLoading != null && isLoading) {
-            // Mostrar indicadores de carga
-            if (binding.progressBudget != null) {
-                binding.progressBudget.setVisibility(View.VISIBLE);
-            }
-        } else {
-            // Ocultar indicadores de carga
-            if (binding.progressBudget != null) {
-                binding.progressBudget.setVisibility(View.GONE);
-            }
-        }
-    }
-
-    /**
-     * Mostrar error en la UI
-     */
-    private void showError(String message) {
+    private void showError(String error) {
         if (isAdded() && getContext() != null) {
-            Toast.makeText(getContext(), message, Toast.LENGTH_LONG).show();
+            Toast.makeText(getContext(), error, Toast.LENGTH_LONG).show();
         }
-        Log.e(TAG, "Error mostrado: " + message);
+        Log.e(TAG, "Error mostrado al usuario: " + error);
     }
 
-    // ==========================================
-    // MÉTODOS DE ACCIONES DE USUARIO
-    // ==========================================
-
-    private void showCopyToExpensesDialog() {
+    /**
+     * Mostrar confirmación para copiar presupuesto a gastos
+     */
+    private void showCopyConfirmationDialog() {
         new MaterialAlertDialogBuilder(requireContext())
-                .setTitle("Copiar presupuesto a gastos reales")
-                .setMessage("¿Deseas copiar todos los items del presupuesto inicial a gastos reales?\n\n" +
-                        "Esto te permitirá registrar las compras reales.")
+                .setTitle("Copiar Presupuesto")
+                .setMessage("¿Desea copiar todos los items del presupuesto inicial a gastos reales?")
                 .setPositiveButton(getString(R.string.btn_copiar_gastos), (dialog, which) -> {
                     copyBudgetToExpenses();
                 })

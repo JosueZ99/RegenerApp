@@ -14,165 +14,17 @@
         android:orientation="vertical"
         android:padding="16dp">
 
-        <!-- Header con Balance -->
-        <com.google.android.material.card.MaterialCardView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="20dp"
-            app:cardCornerRadius="16dp"
-            app:cardElevation="6dp"
-            app:strokeWidth="0dp">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="24dp"
-                android:background="@drawable/gradient_primary_background">
-
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="Sistema de Presupuestos"
-                    android:textSize="22sp"
-                    android:textStyle="bold"
-                    android:textColor="@color/white"
-                    android:textAlignment="center"
-                    android:fontFamily="sans-serif-medium"
-                    android:layout_marginBottom="20dp" />
-
-                <!-- Balance en Tiempo Real -->
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:weightSum="3"
-                    android:layout_marginBottom="16dp">
-
-                    <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:orientation="vertical"
-                        android:gravity="center">
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Presupuestado"
-                            android:textSize="12sp"
-                            android:textColor="@color/white"
-                            android:alpha="0.8" />
-
-                        <TextView
-                            android:id="@+id/tv_total_budget"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="4dp"
-                            android:text="$15,750.00"
-                            android:textSize="16sp"
-                            android:textStyle="bold"
-                            android:textColor="@color/white"
-                            tools:text="$15,750.00" />
-
-                    </LinearLayout>
-
-                    <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:orientation="vertical"
-                        android:gravity="center">
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Gastado"
-                            android:textSize="12sp"
-                            android:textColor="@color/white"
-                            android:alpha="0.8" />
-
-                        <TextView
-                            android:id="@+id/tv_total_expenses"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="4dp"
-                            android:text="$8,240.00"
-                            android:textSize="16sp"
-                            android:textStyle="bold"
-                            android:textColor="@color/white"
-                            tools:text="$8,240.00" />
-
-                    </LinearLayout>
-
-                    <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:orientation="vertical"
-                        android:gravity="center">
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="@string/balance_disponible"
-                            android:textSize="12sp"
-                            android:textColor="@color/white"
-                            android:alpha="0.8" />
-
-                        <TextView
-                            android:id="@+id/tv_balance_real_time"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="4dp"
-                            android:text="$7,510.00"
-                            android:textSize="18sp"
-                            android:textStyle="bold"
-                            android:textColor="@color/white"
-                            tools:text="$7,510.00" />
-
-                    </LinearLayout>
-
-                </LinearLayout>
-
-                <!-- Barra de Progreso del Presupuesto -->
-                <com.google.android.material.progressindicator.LinearProgressIndicator
-                    android:id="@+id/progress_budget"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:progress="52"
-                    app:indicatorColor="@color/white"
-                    app:trackColor="@color/white"
-                    tools:progress="52" />
-
-                <TextView
-                    android:id="@+id/tv_budget_percentage"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="center"
-                    android:layout_marginTop="8dp"
-                    android:text="52% del presupuesto utilizado"
-                    android:textSize="14sp"
-                    android:textColor="@color/white"
-                    android:alpha="0.9"
-                    tools:text="52% del presupuesto utilizado" />
-
-            </LinearLayout>
-
-        </com.google.android.material.card.MaterialCardView>
-
-        <!-- Tabs para alternar entre tablas -->
+        <!-- TabLayout para las dos tablas -->
         <com.google.android.material.tabs.TabLayout
-            android:id="@+id/tab_layout"
+            android:id="@+id/tab_layout_budget"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="16dp"
-            app:tabMode="fixed"
-            app:tabGravity="fill"
+            app:tabIndicatorColor="@color/primary_color"
             app:tabSelectedTextColor="@color/primary_color"
             app:tabTextColor="@color/gray_600"
-            app:tabIndicatorColor="@color/primary_color">
+            app:tabMode="fixed"
+            app:tabGravity="fill">
 
             <com.google.android.material.tabs.TabItem
                 android:layout_width="wrap_content"
@@ -191,7 +43,7 @@
             android:id="@+id/view_pager_budget"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="80dp" />
+            android:layout_marginBottom="10dp" />
 
         <!-- Floating Action Buttons -->
         <LinearLayout
@@ -225,6 +77,11 @@
                 app:tint="@color/white" />
 
         </LinearLayout>
+
+        <!-- Espacio adicional para evitar que el bottom nav oculte el contenido -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="50dp" />
 
     </LinearLayout>
 
