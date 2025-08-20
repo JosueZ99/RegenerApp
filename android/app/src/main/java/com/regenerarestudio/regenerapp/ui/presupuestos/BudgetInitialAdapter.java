@@ -4,7 +4,9 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.PopupMenu;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
@@ -18,7 +20,7 @@ import java.util.Locale;
 
 /**
  * Adapter para la tabla de Presupuesto Inicial
- * Maneja la visualización de items en el RecyclerView
+ * ACTUALIZADO: Incluye menú contextual y callbacks
  */
 public class BudgetInitialAdapter extends RecyclerView.Adapter<BudgetInitialAdapter.BudgetViewHolder> {
 
@@ -26,98 +28,88 @@ public class BudgetInitialAdapter extends RecyclerView.Adapter<BudgetInitialAdap
     private List<BudgetInitialTableFragment.BudgetItem> budgetItems;
     private final NumberFormat currencyFormat;
 
-    public BudgetInitialAdapter(List<BudgetInitialTableFragment.BudgetItem> budgetItems) {
+    // Interfaces de callback
+    private OnItemClickListener onItemClickListener;
+    private OnItemMenuClickListener onItemMenuClickListener;
+
+    /**
+     * Interface para clicks en items
+     */
+    public interface OnItemClickListener {
+        void onItemClick(BudgetInitialTableFragment.BudgetItem item, int position);
+    }
+
+    /**
+     * Interface para opciones del menú contextual
+     */
+    public interface OnItemMenuClickListener {
+        void onEditItem(BudgetInitialTableFragment.BudgetItem item, int position);
+        void onDeleteItem(BudgetInitialTableFragment.BudgetItem item, int position);
+        void onCopyItemToExpenses(BudgetInitialTableFragment.BudgetItem item, int position);
+    }
+
+    public BudgetInitialAdapter(List<BudgetInitialTableFragment.BudgetItem> budgetItems,
+                                OnItemClickListener onItemClickListener,
+                                OnItemMenuClickListener onItemMenuClickListener) {
         this.budgetItems = budgetItems != null ? budgetItems : new ArrayList<>();
         this.currencyFormat = NumberFormat.getCurrencyInstance(new Locale("es", "EC"));
-        Log.d(TAG, "Constructor: Adaptador creado con " + this.budgetItems.size() + " items");
+        this.onItemClickListener = onItemClickListener;
+        this.onItemMenuClickListener = onItemMenuClickListener;
+
+        Log.d(TAG, "BudgetInitialAdapter creado con " + this.budgetItems.size() + " items");
+    }
+
+    // Constructor de compatibilidad para código existente
+    public BudgetInitialAdapter(List<BudgetInitialTableFragment.BudgetItem> budgetItems) {
+        this(budgetItems, null, null);
     }
 
     @NonNull
     @Override
     public BudgetViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        Log.d(TAG, "onCreateViewHolder: Creando ViewHolder para posición");
+        Log.d(TAG, "onCreateViewHolder: Creando ViewHolder");
 
-        try {
-            View view = LayoutInflater.from(parent.getContext())
-                    .inflate(R.layout.item_budget_initial, parent, false);
+        View view = LayoutInflater.from(parent.getContext())
+                .inflate(R.layout.item_budget_initial, parent, false);
 
-            if (view == null) {
-                Log.e(TAG, "onCreateViewHolder: Vista es null");
-                throw new RuntimeException("No se pudo inflar item_budget_initial");
-            }
-
-            Log.d(TAG, "onCreateViewHolder: Vista creada correctamente");
-            return new BudgetViewHolder(view);
-
-        } catch (Exception e) {
-            Log.e(TAG, "onCreateViewHolder: Error creando ViewHolder", e);
-            throw e;
-        }
+        return new BudgetViewHolder(view);
     }
 
     @Override
     public void onBindViewHolder(@NonNull BudgetViewHolder holder, int position) {
-        Log.d(TAG, "onBindViewHolder: Binding item en posición " + position +
-                " de " + budgetItems.size() + " items totales");
-
-        if (position < 0 || position >= budgetItems.size()) {
-            Log.e(TAG, "onBindViewHolder: Posición inválida: " + position);
+        if (budgetItems == null || position >= budgetItems.size()) {
+            Log.e(TAG, "onBindViewHolder: Posición inválida " + position + " / " +
+                    (budgetItems != null ? budgetItems.size() : "null"));
             return;
         }
 
         BudgetInitialTableFragment.BudgetItem item = budgetItems.get(position);
-        if (item == null) {
-            Log.e(TAG, "onBindViewHolder: Item es null en posición " + position);
-            return;
-        }
-
-        Log.d(TAG, "onBindViewHolder: Bindeando item: " + item.getDescription());
-        holder.bind(item);
-        Log.d(TAG, "onBindViewHolder: Item bindeado exitosamente");
+        holder.bind(item, position);
     }
 
     @Override
     public int getItemCount() {
-        int count = budgetItems.size();
-        Log.d(TAG, "getItemCount: Retornando " + count + " items");
+        int count = budgetItems != null ? budgetItems.size() : 0;
+        Log.d(TAG, "getItemCount: " + count);
         return count;
     }
 
     /**
-     * Actualizar la lista de items - VERSIÓN CON DEBUGGING
+     * Actualizar lista de items
      */
     public void updateItems(List<BudgetInitialTableFragment.BudgetItem> newItems) {
-        Log.d(TAG, "updateItems: Iniciando actualización");
-        Log.d(TAG, "updateItems: Items anteriores: " +
-                (this.budgetItems != null ? this.budgetItems.size() : 0));
-        Log.d(TAG, "updateItems: Items nuevos: " +
-                (newItems != null ? newItems.size() : 0));
+        Log.d(TAG, "updateItems: Actualizando desde " +
+                (budgetItems != null ? budgetItems.size() : 0) +
+                " a " + (newItems != null ? newItems.size() : 0) + " items");
 
-        if (newItems == null) {
-            this.budgetItems = new ArrayList<>();
-            Log.d(TAG, "updateItems: newItems era null, creando lista vacía");
-        } else {
-            this.budgetItems = new ArrayList<>(newItems);
-            Log.d(TAG, "updateItems: Lista actualizada con " + this.budgetItems.size() + " items");
+        this.budgetItems = newItems != null ? newItems : new ArrayList<>();
 
-            // Log de cada item para debugging
-            for (int i = 0; i < this.budgetItems.size(); i++) {
-                BudgetInitialTableFragment.BudgetItem item = this.budgetItems.get(i);
-                Log.v(TAG, "updateItems: Item " + i + ": " +
-                        (item != null ? item.getDescription() : "null"));
-            }
-        }
-
-        // Notificar cambios en el hilo principal
         notifyDataSetChanged();
         Log.d(TAG, "updateItems: notifyDataSetChanged() llamado");
-
-        // Verificar que se llamó correctamente
-        Log.d(TAG, "updateItems: Verificación final - getItemCount(): " + getItemCount());
     }
 
     /**
-     * ViewHolder mejorado con debugging extensivo
+     * ViewHolder con menú contextual implementado
      */
     public class BudgetViewHolder extends RecyclerView.ViewHolder {
 
@@ -128,13 +120,14 @@ public class BudgetInitialAdapter extends RecyclerView.Adapter<BudgetInitialAdap
         private TextView tvUnitPrice;
         private TextView tvSupplier;
         private TextView tvTotalPrice;
+        private ImageView btnMenuMore;
 
         public BudgetViewHolder(@NonNull View itemView) {
             super(itemView);
 
             Log.d(TAG, "BudgetViewHolder: Inicializando ViewHolder");
 
-            // Inicializar vistas con verificación detallada
+            // Inicializar vistas
             tvDescription = itemView.findViewById(R.id.tv_material_name);
             tvCategory = itemView.findViewById(R.id.tv_material_category);
             tvQuantity = itemView.findViewById(R.id.tv_quantity);
@@ -142,112 +135,127 @@ public class BudgetInitialAdapter extends RecyclerView.Adapter<BudgetInitialAdap
             tvUnitPrice = itemView.findViewById(R.id.tv_unit_price);
             tvSupplier = itemView.findViewById(R.id.tv_supplier_name);
             tvTotalPrice = itemView.findViewById(R.id.tv_total_price);
+            btnMenuMore = itemView.findViewById(R.id.btn_menu_item);
 
             // Verificar que todas las vistas se encontraron
-            Log.d(TAG, "ViewHolder - tv_material_name: " + (tvDescription != null));
-            Log.d(TAG, "ViewHolder - tv_material_category: " + (tvCategory != null));
-            Log.d(TAG, "ViewHolder - tv_quantity: " + (tvQuantity != null));
-            Log.d(TAG, "ViewHolder - tv_unit: " + (tvUnit != null));
-            Log.d(TAG, "ViewHolder - tv_unit_price: " + (tvUnitPrice != null));
-            Log.d(TAG, "ViewHolder - tv_supplier_name: " + (tvSupplier != null));
-            Log.d(TAG, "ViewHolder - tv_total_price: " + (tvTotalPrice != null));
+            if (tvDescription == null) Log.e(TAG, "ERROR: tv_material_name no encontrado");
+            if (tvCategory == null) Log.e(TAG, "ERROR: tv_material_category no encontrado");
+            if (tvQuantity == null) Log.e(TAG, "ERROR: tv_quantity no encontrado");
+            if (tvUnit == null) Log.e(TAG, "ERROR: tv_unit no encontrado");
+            if (tvUnitPrice == null) Log.e(TAG, "ERROR: tv_unit_price no encontrado");
+            if (tvSupplier == null) Log.e(TAG, "ERROR: tv_supplier_name no encontrado");
+            if (tvTotalPrice == null) Log.e(TAG, "ERROR: tv_total_price no encontrado");
+            if (btnMenuMore == null) Log.e(TAG, "ERROR: btn_menu_item no encontrado");
 
-            if (tvDescription == null) Log.e(TAG, "ERROR: tv_material_name no encontrado en layout");
-            if (tvCategory == null) Log.e(TAG, "ERROR: tv_material_category no encontrado en layout");
-            if (tvQuantity == null) Log.e(TAG, "ERROR: tv_quantity no encontrado en layout");
-            if (tvUnit == null) Log.e(TAG, "ERROR: tv_unit no encontrado en layout");
-            if (tvUnitPrice == null) Log.e(TAG, "ERROR: tv_unit_price no encontrado en layout");
-            if (tvSupplier == null) Log.e(TAG, "ERROR: tv_supplier_name no encontrado en layout");
-            if (tvTotalPrice == null) Log.e(TAG, "ERROR: tv_total_price no encontrado en layout");
+            // Configurar click del item completo
+            itemView.setOnClickListener(v -> {
+                int position = getAdapterPosition();
+                if (position != RecyclerView.NO_POSITION && onItemClickListener != null) {
+                    onItemClickListener.onItemClick(budgetItems.get(position), position);
+                }
+            });
+
+            // Configurar click del menú "more vertical"
+            if (btnMenuMore != null) {
+                btnMenuMore.setOnClickListener(v -> showContextMenu(v, getAdapterPosition()));
+            }
         }
 
-        public void bind(BudgetInitialTableFragment.BudgetItem item) {
-            Log.d(TAG, "bind: Iniciando bind para item: " +
-                    (item != null ? item.getDescription() : "null"));
-
+        public void bind(BudgetInitialTableFragment.BudgetItem item, int position) {
             if (item == null) {
-                Log.e(TAG, "bind: Item es null");
+                Log.e(TAG, "bind: Item es null en posición " + position);
                 return;
             }
 
-            try {
-                // Descripción
-                if (tvDescription != null) {
-                    String description = item.getDescription() != null ? item.getDescription() : "Sin descripción";
-                    tvDescription.setText(description);
-                    Log.d(TAG, "bind: Descripción asignada: " + description);
-                } else {
-                    Log.e(TAG, "bind: tvDescription es null");
-                }
+            Log.d(TAG, "bind: Vinculando item en posición " + position + " - " + item.getDescription());
 
-                // Categoría
-                if (tvCategory != null) {
-                    String categoryText = item.getCategoryDisplay() != null ?
-                            item.getCategoryDisplay() :
-                            (item.getCategory() != null ? item.getCategory() : "Sin categoría");
-                    tvCategory.setText(categoryText);
-                    Log.d(TAG, "bind: Categoría asignada: " + categoryText);
-                } else {
-                    Log.e(TAG, "bind: tvCategory es null");
-                }
-
-                // Cantidad
-                if (tvQuantity != null) {
-                    double quantity = item.getQuantity();
-                    String quantityText;
-                    if (quantity == Math.floor(quantity)) {
-                        quantityText = String.valueOf((int) quantity);
-                    } else {
-                        quantityText = String.format(Locale.getDefault(), "%.2f", quantity);
-                    }
-                    tvQuantity.setText(quantityText);
-                    Log.d(TAG, "bind: Cantidad asignada: " + quantityText);
-                } else {
-                    Log.e(TAG, "bind: tvQuantity es null");
-                }
-
-                // Unidad
-                if (tvUnit != null) {
-                    String unit = item.getUnit() != null ? item.getUnit() : "ud";
-                    tvUnit.setText(unit);
-                    Log.d(TAG, "bind: Unidad asignada: " + unit);
-                } else {
-                    Log.e(TAG, "bind: tvUnit es null");
-                }
-
-                // Precio unitario
-                if (tvUnitPrice != null) {
-                    String unitPrice = currencyFormat.format(item.getUnitPrice());
-                    tvUnitPrice.setText(unitPrice);
-                    Log.d(TAG, "bind: Precio unitario asignado: " + unitPrice);
-                } else {
-                    Log.e(TAG, "bind: tvUnitPrice es null");
-                }
-
-                // Proveedor
-                if (tvSupplier != null) {
-                    String supplierName = item.getSupplierName() != null ?
-                            item.getSupplierName() : "Sin proveedor";
-                    tvSupplier.setText(supplierName);
-                    Log.d(TAG, "bind: Proveedor asignado: " + supplierName);
-                } else {
-                    Log.e(TAG, "bind: tvSupplier es null");
-                }
-
-                // Precio total
-                if (tvTotalPrice != null) {
-                    String totalPrice = currencyFormat.format(item.getTotalPrice());
-                    tvTotalPrice.setText(totalPrice);
-                    Log.d(TAG, "bind: Precio total asignado: " + totalPrice);
-                } else {
-                    Log.e(TAG, "bind: tvTotalPrice es null");
-                }
-
-                Log.d(TAG, "bind: Completado exitosamente para: " + item.getDescription());
-
-            } catch (Exception e) {
-                Log.e(TAG, "bind: Error durante bind", e);
+            // Establecer valores con verificaciones de null
+            if (tvDescription != null) {
+                tvDescription.setText(item.getDescription() != null ? item.getDescription() : "Sin descripción");
             }
+
+            if (tvCategory != null) {
+                tvCategory.setText(item.getCategory() != null ? item.getCategory() : "Sin categoría");
+            }
+
+            if (tvQuantity != null) {
+                String quantityText = String.valueOf(item.getQuantity());
+                tvQuantity.setText(quantityText);
+            }
+
+            if (tvUnit != null) {
+                tvUnit.setText(item.getUnit() != null ? item.getUnit() : "unidad");
+            }
+
+            if (tvUnitPrice != null) {
+                String priceText = currencyFormat.format(item.getUnitPrice());
+                tvUnitPrice.setText(priceText);
+            }
+
+            if (tvSupplier != null) {
+                tvSupplier.setText(item.getSupplierName() != null ? item.getSupplierName() : "Sin proveedor");
+            }
+
+            if (tvTotalPrice != null) {
+                double totalPrice = item.getQuantity() * item.getUnitPrice();
+                String totalText = currencyFormat.format(totalPrice);
+                tvTotalPrice.setText(totalText);
+            }
+
+            // El menú more ya está configurado en el constructor
         }
+
+        /**
+         * Mostrar menú contextual para un item
+         */
+        private void showContextMenu(View anchorView, int position) {
+            if (position == RecyclerView.NO_POSITION || onItemMenuClickListener == null) {
+                Log.w(TAG, "showContextMenu: Posición inválida o listener nulo");
+                return;
+            }
+
+            BudgetInitialTableFragment.BudgetItem item = budgetItems.get(position);
+
+            // Crear PopupMenu
+            PopupMenu popupMenu = new PopupMenu(anchorView.getContext(), anchorView);
+            popupMenu.getMenuInflater().inflate(R.menu.menu_budget_item_context, popupMenu.getMenu());
+
+            // Configurar listeners
+            popupMenu.setOnMenuItemClickListener(menuItem -> {
+                int itemId = menuItem.getItemId();
+
+                if (itemId == R.id.action_edit_item) {
+                    Log.d(TAG, "Menú: Editar item - " + item.getDescription());
+                    onItemMenuClickListener.onEditItem(item, position);
+                    return true;
+
+                } else if (itemId == R.id.action_delete_item) {
+                    Log.d(TAG, "Menú: Eliminar item - " + item.getDescription());
+                    onItemMenuClickListener.onDeleteItem(item, position);
+                    return true;
+
+                } else if (itemId == R.id.action_copy_to_expenses) {
+                    Log.d(TAG, "Menú: Copiar a gastos - " + item.getDescription());
+                    onItemMenuClickListener.onCopyItemToExpenses(item, position);
+                    return true;
+                }
+
+                return false;
+            });
+
+            // Mostrar menú
+            popupMenu.show();
+        }
+    }
+
+    /**
+     * Métodos para actualizar callbacks externamente
+     */
+    public void setOnItemClickListener(OnItemClickListener listener) {
+        this.onItemClickListener = listener;
+    }
+
+    public void setOnItemMenuClickListener(OnItemMenuClickListener listener) {
+        this.onItemMenuClickListener = listener;
     }
 }

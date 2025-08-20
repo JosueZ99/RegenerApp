@@ -71,6 +71,8 @@
     <color name="warning">#FF9800</color>
     <color name="error">#F44336</color>
     <color name="info">#2196F3</color>
+    <color name="info_light">#E3F2FD</color>
+    <color name="info_dark">#1976D2</color>
 
     <!-- Dividers y borders -->
     <color name="divider">#E0E0E0</color>

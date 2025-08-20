@@ -116,7 +116,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginBottom="16dp"
-                    style="@style/Widget.Material3.TextInputLayout.OutlinedBox">
+                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
 
                     <com.google.android.material.textfield.TextInputEditText
                         android:id="@+id/et_search_suppliers"
@@ -215,7 +215,7 @@
                 android:insetBottom="0dp"
                 app:icon="@drawable/ic_sort_24"
                 app:iconSize="16dp"
-                style="@style/Widget.Material3.Button.OutlinedButton" />
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton" />
 
         </LinearLayout>
 

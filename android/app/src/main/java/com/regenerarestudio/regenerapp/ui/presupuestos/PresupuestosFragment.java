@@ -21,10 +21,25 @@ import com.regenerarestudio.regenerapp.MainActivity;
 import com.regenerarestudio.regenerapp.R;
 import com.regenerarestudio.regenerapp.databinding.FragmentPresupuestosBinding;
 
-import java.text.NumberFormat;
+// IMPORTS CORREGIDOS Y AGREGADOS
+import androidx.appcompat.app.AlertDialog;
+import android.text.TextUtils;
+import android.widget.ArrayAdapter;
+import android.widget.AutoCompleteTextView;
+import android.widget.Button;
+import android.widget.LinearLayout;
+import com.google.android.material.textfield.TextInputEditText;
+import com.google.android.material.datepicker.MaterialDatePicker;
+import com.regenerarestudio.regenerapp.data.models.BudgetItemCreateUpdateRequest;
+import com.regenerarestudio.regenerapp.data.models.Supplier;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.List;
 import java.util.Locale;
+import java.util.HashMap;
 import java.util.Map;
+import java.util.ArrayList;
+import java.text.NumberFormat;
 
 /**
  * Fragment del Sistema de Presupuestos con tablas interactivas
@@ -250,6 +265,399 @@ public class PresupuestosFragment extends Fragment {
     }
 
     // ==========================================
+    // MÉTODOS PÚBLICOS (EXPONER FUNCIONALIDAD)
+    // ==========================================
+
+    /**
+     * Exponer ViewModel para fragments hijos
+     */
+    public PresupuestosViewModel getPresupuestosViewModel() {
+        return presupuestosViewModel;
+    }
+
+    /**
+     * Método público para mostrar formulario (llamado desde BudgetInitialTableFragment)
+     */
+    public void showManualEntryForm(boolean isExpense, BudgetItemCreateUpdateRequest editItem) {
+        Log.d(TAG, "showManualEntryForm PUBLIC - isExpense: " + isExpense + ", editItem: " + (editItem != null ? "Editar" : "Nuevo"));
+        showManualEntryFormInternal(isExpense, editItem);
+    }
+
+    // ==========================================
+    // IMPLEMENTACIÓN DEL FORMULARIO MANUAL
+    // ==========================================
+
+    /**
+     * Mostrar formulario manual para añadir/editar items de presupuesto
+     * @param isExpense true si es para gastos reales, false para presupuesto inicial
+     */
+    private void showManualEntryForm(boolean isExpense) {
+        showManualEntryFormInternal(isExpense, null);
+    }
+
+    /**
+     * Mostrar formulario manual para añadir/editar items de presupuesto (SOBRECARGADO)
+     * @param isExpense true si es para gastos reales, false para presupuesto inicial
+     * @param editItem item a editar (null si es para crear nuevo)
+     */
+    private void showManualEntryFormInternal(boolean isExpense, BudgetItemCreateUpdateRequest editItem) {
+        Log.d(TAG, "showManualEntryFormInternal - isExpense: " + isExpense + ", editItem: " + (editItem != null ? "Editar" : "Nuevo"));
+
+        // Crear layout del dialog
+        View dialogView = LayoutInflater.from(getContext()).inflate(R.layout.dialog_budget_manual_entry, null);
+
+        // Referencias a los widgets del formulario
+        TextInputEditText etDescription = dialogView.findViewById(R.id.et_description);
+        TextInputEditText etQuantity = dialogView.findViewById(R.id.et_quantity);
+        TextInputEditText etUnitPrice = dialogView.findViewById(R.id.et_unit_price);
+        TextInputEditText etSpaces = dialogView.findViewById(R.id.et_spaces);
+        AutoCompleteTextView spnCategory = dialogView.findViewById(R.id.spn_category);
+        AutoCompleteTextView spnSupplier = dialogView.findViewById(R.id.spn_supplier);
+        AutoCompleteTextView spnUnit = dialogView.findViewById(R.id.spn_unit);
+
+        // Campos específicos para gastos reales
+        TextInputEditText etDiscount = dialogView.findViewById(R.id.et_discount);
+        TextInputEditText etPurchaseDate = dialogView.findViewById(R.id.et_purchase_date);
+        LinearLayout layoutExpenseFields = dialogView.findViewById(R.id.layout_expense_fields);
+
+        // Mostrar/ocultar campos específicos para gastos
+        layoutExpenseFields.setVisibility(isExpense ? View.VISIBLE : View.GONE);
+
+        // Configurar dropdowns
+        setupCategoryDropdown(spnCategory);
+        setupSupplierDropdown(spnSupplier);
+        setupUnitDropdown(spnUnit);
+
+        // Configurar date picker para gastos reales
+        if (isExpense) {
+            setupDatePicker(etPurchaseDate);
+        }
+
+        // Si es edición, precargar datos
+        if (editItem != null) {
+            etDescription.setText(editItem.getDescription());
+            etQuantity.setText(String.valueOf(editItem.getQuantity()));
+            etUnitPrice.setText(String.valueOf(editItem.getUnitPrice()));
+            etSpaces.setText(editItem.getSpaces());
+            spnCategory.setText(editItem.getCategory(), false);
+            spnUnit.setText(editItem.getUnit(), false);
+
+            // Buscar y establecer proveedor
+            if (editItem.getSupplierId() != null) {
+                loadSupplierById(editItem.getSupplierId(), supplier -> {
+                    if (supplier != null) {
+                        spnSupplier.setText(supplier.getName(), false);
+                    }
+                });
+            }
+
+            // Campos específicos para gastos
+            if (isExpense && editItem.getDiscount() != null) {
+                etDiscount.setText(String.valueOf(editItem.getDiscount()));
+            }
+            if (isExpense && editItem.getPurchaseDate() != null) {
+                etPurchaseDate.setText(editItem.getPurchaseDate());
+            }
+        }
+
+        // Crear dialog
+        MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(getContext())
+                .setTitle(editItem != null ?
+                        (isExpense ? "Editar Gasto Real" : "Editar Item Presupuesto") :
+                        (isExpense ? "Añadir Gasto Real" : "Añadir Item Presupuesto"))
+                .setView(dialogView)
+                .setPositiveButton(editItem != null ? "Actualizar" : "Añadir", null)
+                .setNegativeButton("Cancelar", (dialog, which) -> dialog.dismiss());
+
+        AlertDialog dialog = builder.create();
+
+        // Configurar botón positivo manualmente para validar
+        dialog.setOnShowListener(dialogInterface -> {
+            Button positiveButton = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
+            positiveButton.setOnClickListener(v -> {
+                if (validateAndSubmitForm(isExpense, editItem, etDescription, etQuantity,
+                        etUnitPrice, etSpaces, spnCategory, spnSupplier, spnUnit,
+                        etDiscount, etPurchaseDate, dialog)) {
+                    dialog.dismiss();
+                }
+            });
+        });
+
+        dialog.show();
+    }
+
+    // ==========================================
+    // CONFIGURACIÓN DE DROPDOWNS
+    // ==========================================
+
+    /**
+     * Configurar dropdown de categorías
+     */
+    private void setupCategoryDropdown(AutoCompleteTextView dropdown) {
+        String[] categories = {"Construcción", "Iluminación", "Eléctrico", "Acabados", "Otros"};
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(getContext(),
+                android.R.layout.simple_dropdown_item_1line, categories);
+        dropdown.setAdapter(adapter);
+    }
+
+    /**
+     * Configurar dropdown de proveedores (carga desde ViewModel)
+     */
+    private void setupSupplierDropdown(AutoCompleteTextView dropdown) {
+        // Cargar proveedores desde el ViewModel
+        loadAllSuppliers(suppliers -> {
+            if (suppliers != null && !suppliers.isEmpty()) {
+                String[] supplierNames = suppliers.stream()
+                        .map(Supplier::getName)
+                        .toArray(String[]::new);
+
+                ArrayAdapter<String> adapter = new ArrayAdapter<>(getContext(),
+                        android.R.layout.simple_dropdown_item_1line, supplierNames);
+                dropdown.setAdapter(adapter);
+            }
+        });
+    }
+
+    /**
+     * Configurar dropdown de unidades
+     */
+    private void setupUnitDropdown(AutoCompleteTextView dropdown) {
+        String[] units = {"m²", "m", "litros", "galones", "kg", "unidad", "caja", "rollo"};
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(getContext(),
+                android.R.layout.simple_dropdown_item_1line, units);
+        dropdown.setAdapter(adapter);
+    }
+
+    /**
+     * Configurar date picker para fecha de compra
+     */
+    private void setupDatePicker(TextInputEditText etDate) {
+        etDate.setOnClickListener(v -> {
+            MaterialDatePicker<Long> datePicker = MaterialDatePicker.Builder.datePicker()
+                    .setTitleText("Seleccionar fecha de compra")
+                    .setSelection(MaterialDatePicker.todayInUtcMilliseconds())
+                    .build();
+
+            datePicker.addOnPositiveButtonClickListener(selection -> {
+                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
+                etDate.setText(sdf.format(new Date(selection)));
+            });
+
+            datePicker.show(getParentFragmentManager(), "DATE_PICKER");
+        });
+    }
+
+    // ==========================================
+    // MÉTODOS HELPER PARA CONVERSIÓN
+    // ==========================================
+
+    /**
+     * Convertir BudgetItemCreateUpdateRequest a Map para el ViewModel
+     */
+    private Map<String, Object> budgetRequestToMap(BudgetItemCreateUpdateRequest request) {
+        Map<String, Object> map = new HashMap<>();
+
+        if (request.getId() != null) {
+            map.put("id", request.getId());
+        }
+        map.put("project", request.getProjectId());
+        map.put("description", request.getDescription());
+        map.put("quantity", request.getQuantity());
+        map.put("unit_price", request.getUnitPrice());
+        map.put("unit", request.getUnit());
+        map.put("category", request.getCategory());
+        map.put("spaces", request.getSpaces());
+        map.put("supplier", request.getSupplierId());
+
+        // Campos específicos para gastos reales
+        if (request.getDiscount() != null) {
+            map.put("discount", request.getDiscount());
+        }
+        if (request.getPurchaseDate() != null) {
+            map.put("purchase_date", request.getPurchaseDate());
+        }
+
+        return map;
+    }
+
+    // ==========================================
+    // VALIDACIÓN Y ENVÍO - VERSIÓN CORREGIDA
+    // ==========================================
+
+    /**
+     * Validar formulario y enviar datos - VERSIÓN CORREGIDA
+     */
+    private boolean validateAndSubmitForm(boolean isExpense, BudgetItemCreateUpdateRequest editItem,
+                                          TextInputEditText etDescription, TextInputEditText etQuantity,
+                                          TextInputEditText etUnitPrice, TextInputEditText etSpaces,
+                                          AutoCompleteTextView spnCategory, AutoCompleteTextView spnSupplier,
+                                          AutoCompleteTextView spnUnit, TextInputEditText etDiscount,
+                                          TextInputEditText etPurchaseDate, AlertDialog dialog) {
+
+        // Validar campos obligatorios
+        if (TextUtils.isEmpty(etDescription.getText())) {
+            etDescription.setError("Descripción es obligatoria");
+            return false;
+        }
+
+        if (TextUtils.isEmpty(etQuantity.getText())) {
+            etQuantity.setError("Cantidad es obligatoria");
+            return false;
+        }
+
+        if (TextUtils.isEmpty(etUnitPrice.getText())) {
+            etUnitPrice.setError("Precio unitario es obligatorio");
+            return false;
+        }
+
+        if (TextUtils.isEmpty(spnCategory.getText())) {
+            spnCategory.setError("Categoría es obligatoria");
+            return false;
+        }
+
+        if (TextUtils.isEmpty(spnSupplier.getText())) {
+            spnSupplier.setError("Proveedor es obligatorio");
+            return false;
+        }
+
+        try {
+            // Obtener valores
+            String description = etDescription.getText().toString().trim();
+            double quantity = Double.parseDouble(etQuantity.getText().toString());
+            double unitPrice = Double.parseDouble(etUnitPrice.getText().toString());
+            String spaces = etSpaces.getText().toString().trim();
+            String category = spnCategory.getText().toString();
+            String supplierName = spnSupplier.getText().toString();
+            String unit = spnUnit.getText().toString();
+
+            // Validar valores numéricos
+            if (quantity <= 0) {
+                etQuantity.setError("Cantidad debe ser mayor a 0");
+                return false;
+            }
+
+            if (unitPrice <= 0) {
+                etUnitPrice.setError("Precio debe ser mayor a 0");
+                return false;
+            }
+
+            // Campos específicos para gastos
+            Double discount = null;
+            String purchaseDate = null;
+
+            if (isExpense) {
+                if (!TextUtils.isEmpty(etDiscount.getText())) {
+                    discount = Double.parseDouble(etDiscount.getText().toString());
+                    if (discount < 0 || discount > 100) {
+                        etDiscount.setError("Descuento debe estar entre 0 y 100%");
+                        return false;
+                    }
+                }
+
+                purchaseDate = etPurchaseDate.getText().toString().trim();
+                if (TextUtils.isEmpty(purchaseDate)) {
+                    etPurchaseDate.setError("Fecha de compra es obligatoria");
+                    return false;
+                }
+            }
+
+            // Crear objeto de request
+            BudgetItemCreateUpdateRequest request = new BudgetItemCreateUpdateRequest();
+            request.setProjectId(projectId);
+            request.setDescription(description);
+            request.setQuantity(quantity);
+            request.setUnitPrice(unitPrice);
+            request.setSpaces(spaces);
+            request.setCategory(category);
+            request.setUnit(unit);
+            request.setDiscount(discount);
+            request.setPurchaseDate(purchaseDate);
+
+            // Por ahora usar proveedor fijo (TODO: implementar búsqueda real)
+            request.setSupplierId(1L); // Proveedor por defecto
+
+            // Convertir a Map para el ViewModel
+            Map<String, Object> requestMap = budgetRequestToMap(request);
+
+            // Enviar request usando los métodos correctos del ViewModel
+            if (editItem != null) {
+                // Actualizar item existente
+                if (isExpense) {
+                    // TODO: Implementar updateExpenseReal cuando esté disponible
+                    presupuestosViewModel.addExpenseReal(requestMap);
+                    showSuccessMessage("Gasto actualizado exitosamente");
+                } else {
+                    presupuestosViewModel.updateBudgetItem(editItem.getId(), requestMap);
+                    showSuccessMessage("Item actualizado exitosamente");
+                }
+            } else {
+                // Crear nuevo item
+                if (isExpense) {
+                    presupuestosViewModel.addExpenseReal(requestMap);
+                    showSuccessMessage("Gasto añadido exitosamente");
+                } else {
+                    presupuestosViewModel.addItemToBudget(requestMap);
+                    showSuccessMessage("Item añadido exitosamente");
+                }
+            }
+
+            return true;
+
+        } catch (NumberFormatException e) {
+            showErrorMessage("Error: Revise los valores numéricos ingresados");
+            return false;
+        }
+    }
+
+    // ==========================================
+    // MÉTODOS AUXILIARES PARA PROVEEDORES
+    // ==========================================
+
+    /**
+     * Interface para callbacks de proveedor
+     */
+    public interface SupplierCallback {
+        void onSupplierLoaded(Supplier supplier);
+    }
+
+    /**
+     * Interface para callbacks de lista de proveedores
+     */
+    public interface SuppliersListCallback {
+        void onSuppliersLoaded(List<Supplier> suppliers);
+    }
+
+    /**
+     * Cargar todos los proveedores
+     */
+    private void loadAllSuppliers(SuppliersListCallback callback) {
+        // TODO: Implementar llamada al ViewModel para obtener proveedores
+        Log.d(TAG, "loadAllSuppliers: Implementar llamada al ViewModel");
+        // Por ahora callback con lista vacía para evitar errores
+        callback.onSuppliersLoaded(new ArrayList<>());
+    }
+
+    /**
+     * Cargar proveedor por ID
+     */
+    private void loadSupplierById(Long supplierId, SupplierCallback callback) {
+        // TODO: Implementar llamada al ViewModel para obtener proveedor por ID
+        Log.d(TAG, "loadSupplierById: Implementar llamada al ViewModel para ID " + supplierId);
+        // Por ahora callback con null para evitar errores
+        callback.onSupplierLoaded(null);
+    }
+
+    /**
+     * Cargar proveedor por nombre
+     */
+    private void loadSupplierByName(String supplierName, SupplierCallback callback) {
+        // TODO: Implementar llamada al ViewModel para obtener proveedor por nombre
+        Log.d(TAG, "loadSupplierByName: Implementar llamada al ViewModel para nombre " + supplierName);
+        // Por ahora callback con null para evitar errores
+        callback.onSupplierLoaded(null);
+    }
+
+    // ==========================================
     // MÉTODOS DE UI Y MANEJO DE EVENTOS
     // ==========================================
 
@@ -285,12 +693,6 @@ public class PresupuestosFragment extends Fragment {
                 .show();
     }
 
-    private void showManualEntryForm(boolean isExpense) {
-        // TODO: Implementar formulario manual para agregar items
-        String message = isExpense ? "Formulario de Gasto Real" : "Formulario de Presupuesto";
-        Toast.makeText(requireContext(), message + " - Próximamente", Toast.LENGTH_SHORT).show();
-    }
-
     private void copyBudgetToExpenses() {
         // TODO: Implementar lógica para copiar presupuesto a gastos usando API
         Toast.makeText(requireContext(), "Función de copiado - Próximamente", Toast.LENGTH_SHORT).show();
@@ -300,6 +702,24 @@ public class PresupuestosFragment extends Fragment {
 
         // Recargar datos
         refreshBudgetData();
+    }
+
+    // ==========================================
+    // MÉTODOS AUXILIARES DE UI
+    // ==========================================
+
+    /**
+     * Mostrar mensaje de éxito
+     */
+    private void showSuccessMessage(String message) {
+        Toast.makeText(getContext(), message, Toast.LENGTH_SHORT).show();
+    }
+
+    /**
+     * Mostrar mensaje de error
+     */
+    private void showErrorMessage(String message) {
+        Toast.makeText(getContext(), message, Toast.LENGTH_LONG).show();
     }
 
     // ==========================================

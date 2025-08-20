@@ -65,7 +65,7 @@
                 android:icon="@drawable/ic_content_copy_24"
                 app:backgroundTint="@color/warning"
                 app:iconTint="@color/white"
-                app:shapeAppearanceOverlay="@style/ShapeAppearanceOverlay.Material3.FloatingActionButton" />
+                app:shapeAppearanceOverlay="@style/ShapeAppearanceOverlay.MaterialComponents.FloatingActionButton" />
 
             <!-- FAB Agregar Item -->
             <com.google.android.material.floatingactionbutton.FloatingActionButton

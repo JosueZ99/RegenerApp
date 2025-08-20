@@ -300,13 +300,14 @@
                 android:layout_height="40dp"
                 android:layout_weight="1"
                 android:layout_marginEnd="6dp"
+                android:layout_marginBottom="5dp"
                 android:insetTop="0dp"
                 android:insetBottom="0dp"
                 app:icon="@drawable/ic_phone_24"
                 app:iconSize="18dp"
                 app:iconPadding="0dp"
                 app:iconGravity="textStart"
-                style="@style/Widget.Material3.Button.OutlinedButton" />
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btn_whatsapp_supplier"
@@ -314,13 +315,14 @@
                 android:layout_height="40dp"
                 android:layout_weight="1"
                 android:layout_marginHorizontal="3dp"
+                android:layout_marginBottom="5dp"
                 android:insetTop="0dp"
                 android:insetBottom="0dp"
                 app:icon="@drawable/ic_message_24"
                 app:iconSize="18dp"
                 app:iconPadding="0dp"
                 app:iconGravity="textStart"
-                style="@style/Widget.Material3.Button.OutlinedButton" />
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btn_view_catalog"
@@ -328,13 +330,14 @@
                 android:layout_height="40dp"
                 android:layout_weight="1"
                 android:layout_marginStart="6dp"
+                android:layout_marginBottom="5dp"
                 android:text="Ver"
                 android:textSize="12sp"
                 android:insetTop="0dp"
                 android:insetBottom="0dp"
                 app:icon="@drawable/ic_visibility_24"
                 app:iconSize="16dp"
-                style="@style/Widget.Material3.Button" />
+                style="@style/Widget.MaterialComponents.Button" />
 
         </LinearLayout>
 

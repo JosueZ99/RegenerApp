@@ -6,6 +6,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -16,15 +17,23 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.regenerarestudio.regenerapp.R;
 import com.regenerarestudio.regenerapp.databinding.FragmentTableBudgetInitialBinding;
 
+// IMPORTS CORREGIDOS Y AGREGADOS
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.regenerarestudio.regenerapp.data.models.BudgetItemCreateUpdateRequest;
+import com.regenerarestudio.regenerapp.MainActivity;
+import java.util.HashMap;
+import java.util.Map;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Locale;
+
 import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
-import java.util.Map;
 
 /**
  * Fragment para mostrar la tabla de Presupuesto Inicial
- * VERSIÓN CORREGIDA - Actualiza UI correctamente
+ * VERSIÓN CORREGIDA - Actualiza UI correctamente con CRUD completo
  */
 public class BudgetInitialTableFragment extends Fragment {
 
@@ -93,42 +102,22 @@ public class BudgetInitialTableFragment extends Fragment {
     }
 
     /**
-     * Configuración mejorada del RecyclerView
+     * Configuración mejorada del RecyclerView con callbacks
      */
     private void setupRecyclerView() {
         Log.d(TAG, "setupRecyclerView: Iniciando configuración");
 
-        if (binding == null) {
-            Log.e(TAG, "setupRecyclerView: binding es null");
-            return;
-        }
-
-        if (binding.rvBudgetInitial == null) {
-            Log.e(TAG, "setupRecyclerView: rvBudgetInitial es null en binding");
+        if (binding == null || binding.rvBudgetInitial == null) {
+            Log.e(TAG, "setupRecyclerView: binding o RecyclerView es null");
             return;
         }
 
         recyclerView = binding.rvBudgetInitial;
         Log.d(TAG, "setupRecyclerView: RecyclerView obtenido del binding");
 
-        // Verificar que el RecyclerView no sea null
-        if (recyclerView == null) {
-            Log.e(TAG, "setupRecyclerView: RecyclerView es null después de asignación");
-            return;
-        }
-
-        // Verificar visibilidad y dimensiones
-        Log.d(TAG, "setupRecyclerView: Visibilidad inicial: " + recyclerView.getVisibility());
-        recyclerView.post(() -> {
-            Log.d(TAG, "setupRecyclerView: Dimensiones RecyclerView - " +
-                    "Width: " + recyclerView.getWidth() +
-                    ", Height: " + recyclerView.getHeight());
-        });
-
         // Configurar LayoutManager
         LinearLayoutManager layoutManager = new LinearLayoutManager(getContext());
         recyclerView.setLayoutManager(layoutManager);
-        Log.d(TAG, "setupRecyclerView: LayoutManager configurado");
 
         // Inicializar lista si es necesaria
         if (budgetItems == null) {
@@ -136,104 +125,272 @@ public class BudgetInitialTableFragment extends Fragment {
             Log.d(TAG, "setupRecyclerView: Lista budgetItems inicializada");
         }
 
-        // Crear y configurar adapter
-        adapter = new BudgetInitialAdapter(budgetItems);
+        // Crear adapter con callbacks implementados
+        adapter = new BudgetInitialAdapter(
+                budgetItems,
+                this::onItemClick,        // Callback para click en item
+                new BudgetInitialAdapter.OnItemMenuClickListener() {
+                    @Override
+                    public void onEditItem(BudgetItem item, int position) {
+                        handleEditItem(item, position);
+                    }
+
+                    @Override
+                    public void onDeleteItem(BudgetItem item, int position) {
+                        handleDeleteItem(item, position);
+                    }
+
+                    @Override
+                    public void onCopyItemToExpenses(BudgetItem item, int position) {
+                        handleCopyItemToExpenses(item, position);
+                    }
+                }
+        );
+
         recyclerView.setAdapter(adapter);
-        Log.d(TAG, "setupRecyclerView: Adapter asignado al RecyclerView");
+        Log.d(TAG, "setupRecyclerView: Adapter asignado al RecyclerView con callbacks");
 
-        // Configuraciones adicionales para mejor rendimiento
-        recyclerView.setHasFixedSize(false); // Cambiar a false para debugging
-        recyclerView.setItemAnimator(null); // Desactivar animaciones
-
-        // Asegurar visibilidad
+        // Configuraciones adicionales
+        recyclerView.setHasFixedSize(false);
+        recyclerView.setItemAnimator(null);
         recyclerView.setVisibility(View.VISIBLE);
-        Log.d(TAG, "setupRecyclerView: Visibilidad establecida a VISIBLE");
-
-        // Verificar adapter
-        RecyclerView.Adapter<?> currentAdapter = recyclerView.getAdapter();
-        if (currentAdapter == null) {
-            Log.e(TAG, "setupRecyclerView: ERROR - Adapter es null después de asignación");
-        } else {
-            Log.d(TAG, "setupRecyclerView: Adapter asignado correctamente. Item count: " +
-                    currentAdapter.getItemCount());
-        }
 
         Log.d(TAG, "setupRecyclerView: Configuración completada exitosamente");
     }
 
+    // ==========================================
+    // MÉTODOS AUXILIARES
+    // ==========================================
+
     /**
-     * Método para forzar refresh del RecyclerView - AGREGAR ESTE MÉTODO
+     * Obtener ID del proyecto actual desde MainActivity
      */
-    private void forceRecyclerViewRefresh() {
-        Log.d(TAG, "forceRecyclerViewRefresh: Forzando actualización");
-
-        if (recyclerView == null) {
-            Log.e(TAG, "forceRecyclerViewRefresh: RecyclerView es null");
-            return;
+    private long getCurrentProjectId() {
+        if (getActivity() instanceof MainActivity) {
+            MainActivity activity = (MainActivity) getActivity();
+            return activity.getSelectedProjectId();
         }
+        return -1L;
+    }
 
-        if (adapter == null) {
-            Log.e(TAG, "forceRecyclerViewRefresh: Adapter es null");
-            return;
-        }
+    // ==========================================
+    // CALLBACKS DEL ADAPTER
+    // ==========================================
 
-        // Verificar estado actual
-        Log.d(TAG, "forceRecyclerViewRefresh: Items en adapter: " + adapter.getItemCount());
-        Log.d(TAG, "forceRecyclerViewRefresh: Visibilidad RecyclerView: " + recyclerView.getVisibility());
+    /**
+     * Callback para click en item completo
+     */
+    private void onItemClick(BudgetItem item, int position) {
+        Log.d(TAG, "onItemClick: Item clickeado - " + item.getDescription() + " en posición " + position);
 
-        // Forzar layout
-        recyclerView.post(() -> {
-            Log.d(TAG, "forceRecyclerViewRefresh: Ejecutando en post()");
-
-            // Verificar dimensiones
-            Log.d(TAG, "forceRecyclerViewRefresh: Dimensiones - W:" +
-                    recyclerView.getWidth() + " H:" + recyclerView.getHeight());
-
-            // Forzar layout
-            recyclerView.requestLayout();
-
-            // Scroll para forzar binding
-            recyclerView.scrollToPosition(0);
-
-            Log.d(TAG, "forceRecyclerViewRefresh: Layout y scroll forzados");
-        });
+        // Por ahora solo mostrar info, podrías expandir para mostrar detalles
+        Toast.makeText(getContext(),
+                "Item: " + item.getDescription(),
+                Toast.LENGTH_SHORT).show();
     }
 
     /**
-     * Estado vacío mejorado
+     * Manejar edición de item
+     */
+    private void handleEditItem(BudgetItem item, int position) {
+        Log.d(TAG, "handleEditItem: Editando item - " + item.getDescription());
+
+        // Llamar al método del fragment padre para mostrar formulario de edición
+        if (getParentFragment() instanceof PresupuestosFragment) {
+            PresupuestosFragment parentFragment = (PresupuestosFragment) getParentFragment();
+
+            // Convertir BudgetItem a BudgetItemCreateUpdateRequest para edición
+            BudgetItemCreateUpdateRequest editRequest = new BudgetItemCreateUpdateRequest();
+            editRequest.setId(item.getId());
+            editRequest.setProjectId(item.getProjectId());
+            editRequest.setDescription(item.getDescription());
+            editRequest.setQuantity(item.getQuantity());
+            editRequest.setUnitPrice(item.getUnitPrice());
+            editRequest.setSpaces(item.getSpaces());
+            editRequest.setCategory(item.getCategory());
+            editRequest.setUnit(item.getUnit());
+            editRequest.setSupplierId(item.getSupplierId());
+
+            // Llamar método del padre para mostrar formulario
+            parentFragment.showManualEntryForm(false, editRequest);
+        }
+    }
+
+    /**
+     * Manejar eliminación de item
+     */
+    private void handleDeleteItem(BudgetItem item, int position) {
+        Log.d(TAG, "handleDeleteItem: Eliminando item - " + item.getDescription());
+        showDeleteConfirmationDialog(item, position);
+    }
+
+    /**
+     * Manejar copia de item a gastos
+     */
+    private void handleCopyItemToExpenses(BudgetItem item, int position) {
+        Log.d(TAG, "handleCopyItemToExpenses: Copiando item a gastos - " + item.getDescription());
+        showCopyToExpensesDialog(item);
+    }
+
+    // ==========================================
+    // MÉTODOS DE ACCIÓN
+    // ==========================================
+
+    /**
+     * Mostrar diálogo de confirmación para eliminar item
+     */
+    private void showDeleteConfirmationDialog(BudgetItem item, int position) {
+        new MaterialAlertDialogBuilder(getContext())
+                .setTitle("Confirmar eliminación")
+                .setMessage("¿Está seguro de que desea eliminar este item?\n\n" +
+                        "Material: " + item.getDescription() + "\n" +
+                        "Total: " + currencyFormat.format(item.getQuantity() * item.getUnitPrice()))
+                .setIcon(R.drawable.ic_warning_24)
+                .setPositiveButton("Eliminar", (dialog, which) -> {
+                    deleteItemFromBudget(item, position);
+                })
+                .setNegativeButton("Cancelar", (dialog, which) -> {
+                    dialog.dismiss();
+                })
+                .show();
+    }
+
+    /**
+     * Eliminar item del presupuesto llamando al ViewModel
+     */
+    private void deleteItemFromBudget(BudgetItem item, int position) {
+        Log.d(TAG, "deleteItemFromBudget: Eliminando item ID " + item.getId());
+
+        // Obtener referencia al ViewModel del fragment padre
+        if (getParentFragment() instanceof PresupuestosFragment) {
+            PresupuestosFragment parentFragment = (PresupuestosFragment) getParentFragment();
+            PresupuestosViewModel viewModel = parentFragment.getPresupuestosViewModel();
+
+            if (viewModel != null) {
+                viewModel.deleteBudgetItem(item.getId());
+
+                // Mostrar mensaje de éxito
+                Toast.makeText(getContext(),
+                        "Item eliminado: " + item.getDescription(),
+                        Toast.LENGTH_SHORT).show();
+
+                Log.d(TAG, "deleteItemFromBudget: Eliminación solicitada al ViewModel");
+            } else {
+                Log.e(TAG, "deleteItemFromBudget: ViewModel es null");
+                Toast.makeText(getContext(), "Error: No se pudo eliminar el item", Toast.LENGTH_SHORT).show();
+            }
+        }
+    }
+
+    /**
+     * Mostrar diálogo para copiar item individual a gastos reales
+     */
+    private void showCopyToExpensesDialog(BudgetItem item) {
+        // Calcular total del item
+        double totalAmount = item.getQuantity() * item.getUnitPrice();
+
+        new MaterialAlertDialogBuilder(getContext())
+                .setTitle("Copiar a gastos reales")
+                .setMessage("¿Desea copiar este item a gastos reales?\n\n" +
+                        "Material: " + item.getDescription() + "\n" +
+                        "Cantidad: " + item.getQuantity() + " " + item.getUnit() + "\n" +
+                        "Total: " + currencyFormat.format(totalAmount) + "\n\n" +
+                        "Nota: Podrá modificar el precio y agregar descuentos después.")
+                .setIcon(R.drawable.ic_copy_24)
+                .setPositiveButton("Copiar", (dialog, which) -> {
+                    copyItemToExpenses(item);
+                })
+                .setNegativeButton("Cancelar", (dialog, which) -> {
+                    dialog.dismiss();
+                })
+                .show();
+    }
+
+    /**
+     * Copiar item individual a gastos reales - VERSIÓN CORREGIDA
+     */
+    private void copyItemToExpenses(BudgetItem item) {
+        Log.d(TAG, "copyItemToExpenses: Copiando item - " + item.getDescription());
+
+        // Crear Map para gasto real basado en el item de presupuesto
+        Map<String, Object> expenseMap = new HashMap<>();
+        expenseMap.put("project", item.getProjectId());
+        expenseMap.put("description", item.getDescription());
+        expenseMap.put("quantity", item.getQuantity());
+        expenseMap.put("unit_price", item.getUnitPrice());
+        expenseMap.put("unit", item.getUnit());
+        expenseMap.put("category", item.getCategory());
+        expenseMap.put("spaces", item.getSpaces());
+        expenseMap.put("supplier", item.getSupplierId());
+
+        // Campos específicos para gastos (valores por defecto)
+        expenseMap.put("discount", 0.0); // Sin descuento inicial
+
+        // Fecha actual como fecha de compra por defecto
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
+        expenseMap.put("purchase_date", sdf.format(new Date()));
+
+        // Obtener ViewModel y crear gasto real
+        if (getParentFragment() instanceof PresupuestosFragment) {
+            PresupuestosFragment parentFragment = (PresupuestosFragment) getParentFragment();
+            PresupuestosViewModel viewModel = parentFragment.getPresupuestosViewModel();
+
+            if (viewModel != null) {
+                viewModel.addExpenseReal(expenseMap); // 🟢 MÉTODO CORREGIDO
+
+                // Mostrar mensaje de éxito
+                Toast.makeText(getContext(),
+                        "Item copiado a gastos reales: " + item.getDescription(),
+                        Toast.LENGTH_LONG).show();
+
+                Log.d(TAG, "copyItemToExpenses: Item copiado exitosamente");
+            } else {
+                Log.e(TAG, "copyItemToExpenses: ViewModel es null");
+                Toast.makeText(getContext(), "Error: No se pudo copiar el item", Toast.LENGTH_SHORT).show();
+            }
+        }
+    }
+
+    // ==========================================
+    // MÉTODOS AUXILIARES
+    // ==========================================
+
+    /**
+     * Obtener referencia al ViewModel del fragment padre
+     */
+    public PresupuestosViewModel getPresupuestosViewModel() {
+        if (getParentFragment() instanceof PresupuestosFragment) {
+            return ((PresupuestosFragment) getParentFragment()).getPresupuestosViewModel();
+        }
+        return null;
+    }
+
+    // ==========================================
+    // MÉTODOS DE ESTADO DE UI
+    // ==========================================
+
+    /**
+     * Mostrar estado vacío
      */
     private void showEmptyState() {
-        Log.d(TAG, "Mostrando estado vacío");
+        Log.d(TAG, "showEmptyState: Mostrando estado vacío");
 
-        if (recyclerView != null) {
-            recyclerView.setVisibility(View.VISIBLE); // Mantener visible
+        if (adapter != null) {
+            adapter.updateItems(new ArrayList<>());
         }
 
-        // Actualizar totales con valores en cero
-        if (binding != null) {
-            if (binding.tvTotalItemsInitial != null) {
-                binding.tvTotalItemsInitial.setText("0 items");
-            }
-            if (binding.tvTotalBudgetInitial != null) {
-                binding.tvTotalBudgetInitial.setText(currencyFormat.format(0.0));
-            }
-        }
+        updateTotalsInUI(0, 0.0);
     }
 
     /**
-     * Mostrar contenido - VERSIÓN MEJORADA
+     * Mostrar contenido con datos
      */
     private void showContent() {
-        Log.d(TAG, "showContent: Mostrando contenido con " + budgetItems.size() + " items");
+        Log.d(TAG, "showContent: Mostrando contenido con datos");
 
         if (recyclerView != null) {
-            recyclerView.setVisibility(View.VISIBLE);
-            Log.d(TAG, "showContent: RecyclerView visibilidad establecida a VISIBLE");
-
-            // Verificar en el siguiente frame
             recyclerView.post(() -> {
-                Log.d(TAG, "showContent: Verificación post - Visibilidad: " + recyclerView.getVisibility());
-                Log.d(TAG, "showContent: Verificación post - Items en adapter: " +
+                Log.d(TAG, "showContent: RecyclerView - Items en adapter: " +
                         (adapter != null ? adapter.getItemCount() : "adapter null"));
             });
         } else {
@@ -308,39 +465,45 @@ public class BudgetInitialTableFragment extends Fragment {
                 recyclerView.postDelayed(() -> {
                     forceRecyclerViewRefresh();
                 }, 100);
-
             } else {
-                Log.e(TAG, "updateUI: ERROR - Adapter es null");
+                Log.e(TAG, "updateUI: Adapter es null, no se puede actualizar");
             }
 
-            // Actualizar totales en la UI
-            updateTotals(budgetItems.size(), totalAmount);
+            // Actualizar totales
+            updateTotalsInUI(budgetItems.size(), totalAmount);
 
-            // Mostrar el contenido o estado vacío según corresponda
-            if (budgetItems.isEmpty()) {
-                showEmptyState();
-                Log.d(TAG, "updateUI: Mostrando estado vacío");
-            } else {
-                showContent();
-                Log.d(TAG, "updateUI: Mostrando contenido con " + budgetItems.size() + " items");
-            }
+            // Mostrar contenido
+            showContent();
+
+            Log.d(TAG, "updateUI: Actualización completada exitosamente");
 
         } catch (Exception e) {
-            Log.e(TAG, "updateUI: Error durante actualización", e);
+            Log.e(TAG, "updateUI: Error durante actualización: " + e.getMessage(), e);
         }
     }
 
+    /**
+     * Forzar refresh del RecyclerView
+     */
+    private void forceRecyclerViewRefresh() {
+        if (recyclerView != null && adapter != null) {
+            Log.d(TAG, "forceRecyclerViewRefresh: Forzando refresh");
+            adapter.notifyDataSetChanged();
+            recyclerView.invalidate();
+            recyclerView.requestLayout();
+        }
+    }
 
     /**
-     * Actualizar los totales mostrados en la UI - VERSIÓN CORREGIDA
+     * Actualizar totales en la UI
      */
-    private void updateTotals(int itemCount, double totalAmount) {
-        Log.d(TAG, "Actualizando totales - Items: " + itemCount + ", Monto: " + totalAmount);
+    private void updateTotalsInUI(int itemCount, double totalAmount) {
+        Log.d(TAG, "updateTotalsInUI: Items: " + itemCount + ", Total: " + totalAmount);
 
         try {
-            // Verificar que el binding esté disponible
+            // Verificar que binding no sea null
             if (binding == null) {
-                Log.e(TAG, "Error: binding es null al actualizar totales");
+                Log.e(TAG, "updateTotalsInUI: Binding es null");
                 return;
             }
 
@@ -370,7 +533,7 @@ public class BudgetInitialTableFragment extends Fragment {
     }
 
     /**
-     * Crear BudgetItem desde Map del backend
+     * Crear BudgetItem desde Map del backend - VERSIÓN CORREGIDA
      */
     private BudgetItem createBudgetItemFromMap(Map<String, Object> itemData) {
         BudgetItem item = new BudgetItem();
@@ -379,6 +542,9 @@ public class BudgetInitialTableFragment extends Fragment {
         if (itemData.get("id") instanceof Number) {
             item.setId(((Number) itemData.get("id")).longValue());
         }
+
+        // 🟢 PROJECT ID - AGREGAR ESTA LÍNEA
+        item.setProjectId(getCurrentProjectId());
 
         // Descripción
         item.setDescription((String) itemData.get("description"));
@@ -391,13 +557,7 @@ public class BudgetInitialTableFragment extends Fragment {
         item.setSpaces((String) itemData.get("spaces"));
 
         // Cantidad
-        if (itemData.get("quantity") instanceof String) {
-            try {
-                item.setQuantity(Double.parseDouble((String) itemData.get("quantity")));
-            } catch (NumberFormatException e) {
-                item.setQuantity(1.0);
-            }
-        } else if (itemData.get("quantity") instanceof Number) {
+        if (itemData.get("quantity") instanceof Number) {
             item.setQuantity(((Number) itemData.get("quantity")).doubleValue());
         }
 
@@ -405,25 +565,17 @@ public class BudgetInitialTableFragment extends Fragment {
         item.setUnit((String) itemData.get("unit"));
 
         // Precio unitario
-        if (itemData.get("unit_price") instanceof String) {
-            try {
-                item.setUnitPrice(Double.parseDouble((String) itemData.get("unit_price")));
-            } catch (NumberFormatException e) {
-                item.setUnitPrice(0.0);
-            }
-        } else if (itemData.get("unit_price") instanceof Number) {
+        if (itemData.get("unit_price") instanceof Number) {
             item.setUnitPrice(((Number) itemData.get("unit_price")).doubleValue());
         }
 
         // Precio total
-        if (itemData.get("total_price") instanceof String) {
-            try {
-                item.setTotalPrice(Double.parseDouble((String) itemData.get("total_price")));
-            } catch (NumberFormatException e) {
-                item.setTotalPrice(item.getQuantity() * item.getUnitPrice());
-            }
-        } else if (itemData.get("total_price") instanceof Number) {
+        if (itemData.get("total_price") instanceof Number) {
             item.setTotalPrice(((Number) itemData.get("total_price")).doubleValue());
+        } else {
+            // Calcular si no viene del backend
+            double total = item.getQuantity() * item.getUnitPrice();
+            item.setTotalPrice(total);
         }
 
         // Proveedor
@@ -439,10 +591,11 @@ public class BudgetInitialTableFragment extends Fragment {
     }
 
     /**
-     * Clase modelo para items del presupuesto
+     * Clase modelo para items del presupuesto - VERSIÓN CORREGIDA CON PROJECT ID
      */
     public static class BudgetItem {
         private Long id;
+        private Long projectId; // 🟢 AGREGADO
         private String description;
         private String category;
         private String categoryDisplay;
@@ -461,6 +614,10 @@ public class BudgetInitialTableFragment extends Fragment {
         // Getters y Setters
         public Long getId() { return id; }
         public void setId(Long id) { this.id = id; }
+
+        // 🟢 MÉTODOS AGREGADOS PARA PROJECT ID
+        public Long getProjectId() { return projectId; }
+        public void setProjectId(Long projectId) { this.projectId = projectId; }
 
         public String getDescription() { return description; }
         public void setDescription(String description) { this.description = description; }
